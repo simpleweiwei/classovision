@@ -1,0 +1,4 @@
+Nonstandard packages required/extented:
+keras
+opencv-contrib-python (extended OpenCV including SIFT and SURF)
+imutils
