@@ -4,12 +4,35 @@ import matplotlib.pyplot as plt
 from scipy import spatial
 import glob
 import os
+
 import pickle as pck
 from math import ceil,floor
 import random
-from skimage import feature
+#from skimage import feature
 
-import utils as u
+#import utils as u
+
+def is_error_image(image_file):
+    try:
+        image = cv2.imread(image_file)
+    except:
+        return True
+
+    if image is None:
+        return True
+    else:
+        return False
+
+def get_class_label_from_folder(image_file):
+    return os.path.basename(os.path.dirname(image_file))
+
+def get_class_labels_from_folders(image_files):
+    class_labels=[]
+    for img_file in image_files:
+        class_label = get_class_label_from_folder(img_file)
+        class_labels.append(class_label)
+    return class_labels
+
 
 def get_features_for_image_list(image_list,feature_type='hog',surf_book_of_words=None):
 
@@ -73,7 +96,7 @@ def get_features_for_image_list_lbp(image_list):
             print('Error generating LBP features for file {}, bypassing file'.format(img_file))
             continue
 
-        image_labels.append(u.get_class_label_from_folder(img_file))
+        image_labels.append(get_class_label_from_folder(img_file))
 
         if not 'feature_mat' in locals():
             feature_mat = np.zeros((len(image_list), np.prod(np.shape(features))))
@@ -93,7 +116,7 @@ def get_features_for_image_list_hog(image_list,cell_size=(8,8),block_size=(2,2),
             print('Error generating HOG features for file {}, bypassing file'.format(img_file))
             continue
 
-        image_labels.append(u.get_class_label_from_folder(img_file))
+        image_labels.append(get_class_label_from_folder(img_file))
 
         if not 'feature_mat' in locals():
             feature_mat = np.zeros((len(image_list), np.prod(np.shape(features))))
@@ -103,8 +126,8 @@ def get_features_for_image_list_hog(image_list,cell_size=(8,8),block_size=(2,2),
     return (feature_mat,image_labels)
 
 def get_features_for_image_list_cnn(image_list):
-    image_list = [x for x in image_list if not u.is_error_image(x)]
-    image_labels = u.get_class_labels_from_folders(image_list)
+    image_list = [x for x in image_list if not is_error_image(x)]
+    image_labels = get_class_labels_from_folders(image_list)
     for i,img_file in enumerate(image_list):
         image = cv2.imread(img_file)
 
@@ -116,6 +139,7 @@ def get_features_for_image_list_cnn(image_list):
     feature_mat = get_cnn_features(img_mat)
 
     return (feature_mat,image_labels)
+
 
 def get_lbp_features(image, eps=1e-7, num_points=24, radius=8):
     #https://www.pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
@@ -182,7 +206,7 @@ def get_hog_features(image,cell_size=(8,8),block_size=(2,2),nbins=9):
     gradients /= cell_count
     return gradients
 
-def get_cnn_features(image_data,batch_size=10):
+def get_cnn_features(image_data,batch_size=50):
     #note: make sure you pass in an RGB image
     #TODO: double check if this network wants RGB or BGR
     #reshape to dimensions to pass into CNN
@@ -276,7 +300,7 @@ def get_image_descriptions_surf(image_files,hessian_threshold=100, use_usurf=Fal
             continue
         kp, dsc= get_surf_features(gray,hessian_threshold=hessian_threshold,use_usurf=use_usurf,use_extended=use_extended)
         image_descriptions.append(dsc)
-        image_labels.append(u.get_class_label_from_folder(p))
+        image_labels.append(get_class_label_from_folder(p))
 
     return (image_descriptions,image_labels)
 
@@ -320,11 +344,11 @@ def get_vocab_hist(image_descriptions,bag_of_words):
 if __name__ == '__main__':
     print('Feature extraction process start')
 
-    train_template = r'C:\Data\computer_vision_coursework\Images\face_images\from_both\train\*\*.jpg'
+    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\train\*\*.jpg'
     training_images = glob.glob(train_template)
     #random.shuffle(training_images)
     #training_images = training_images[0:10]
-    val_template = r'C:\Data\computer_vision_coursework\Images\face_images\from_both\val\*\*.jpg'
+    val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
     val_images = glob.glob(val_template)
     #random.shuffle(val_images)
     #val_images = val_images[0:10]
@@ -334,6 +358,8 @@ if __name__ == '__main__':
 
     feature_save_directory=r'.\data\extracted_features'
     #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
+    if not os.path.isdir(feature_save_directory):
+        os.makedirs(feature_save_directory)
 
     surf_dict_size=200
     train_bow_surf=None #initialise to None for data flow reasons
@@ -353,14 +379,29 @@ if __name__ == '__main__':
         val_images_to_use = val_images[first_va:last_va]
 
         results = {}
-        for ft in ['hog']:
+        for ft in ['surf']:
             print("Start feature extraction for '{}'".format(ft))
             results[ft]={}
             results[ft]['feature_type']=ft
 
-            if ft=='surf':
+            #Save results in batches to overcome max save size limitations
+            save_batch_size = 1000
+            if ft!='surf':
+                save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
+            else:
                 train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size)
                 results[ft]['book_of_words'] = train_bow_surf
+                save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
+                #if surf, save book of words
+                rows, cols = np.shape(results[ft]['book_of_words'])
+                batches = ceil(rows / save_batch_size)
+                for b in range(batches):
+                    first = b * save_batch_size
+                    last = min((1 + b) * save_batch_size, rows)
+                    bow = results[ft]['book_of_words'][first:last]
+                    save_nam_batch = save_nam.replace('.npy', '_BOW_batch_{}.npy'.format(str(b)))
+                    np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
+                    print('SURF Book of words batch saved: {}'.format(save_nam_batch))
 
             #get and store training & validation features
             train_features,train_labels = get_features_for_image_list(
@@ -381,22 +422,7 @@ if __name__ == '__main__':
             results[ft]['val_features'] = val_features
             results[ft]['val_labels'] = val_labels
 
-            #Save results in batches to overcome max save size limitations
-            save_batch_size = 1000
-            if ft!='surf':
-                save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
-            else:
-                save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
-                #if surf, save book of words
-                rows, cols = np.shape(results[ft]['book_of_words'])
-                batches = ceil(rows / save_batch_size)
-                for b in range(batches):
-                    first = b * save_batch_size
-                    last = min((1 + b) * save_batch_size, rows)
-                    bow = results[ft]['book_of_words'][first:last]
-                    save_nam_batch = save_nam.replace('.npy', '_BOW_batch_{}.npy'.format(str(b)))
-                    np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
-                    print('SURF Book of words batch saved: {}'.format(save_nam_batch))
+
 
             for set in ['train','val']:
                 rows,cols = np.shape(results[ft][set+'_features'])
