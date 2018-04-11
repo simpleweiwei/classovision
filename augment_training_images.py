@@ -3,6 +3,13 @@ import os
 import glob
 import cv2
 import numpy as np
+import datetime as dt
+
+import imgaug as ia
+from imgaug import augmenters as iaa
+import numpy as np
+import random
+import shutil
 
 def load_batch_from_files(file_list):
     for file in file_list:
@@ -15,10 +22,28 @@ def load_batch_from_files(file_list):
     return batch_data
 
 
+def balance_classes(from_folder,to_folder,target_obs):
+    from_glob=os.path.join(from_folder,'*')
+    folders_to_check=glob.glob(from_glob)
 
-import imgaug as ia
-from imgaug import augmenters as iaa
-import numpy as np
+    print_no=0
+    for folder in folders_to_check:
+        print('Starting folder: {}'.format(os.path.basename(folder)))
+
+        file_glob=os.path.join(folder,'*jpg')
+        file_list=glob.glob(file_glob)
+        random.shuffle(file_list)
+        file_list=file_list[0:target_obs]
+
+        target_folder = os.path.join(to_folder, os.path.basename(folder))
+        if not os.path.isdir(target_folder):
+            os.makedirs(target_folder)
+
+        for file in file_list:
+            target_file=os.path.join(target_folder,os.path.basename(file))
+            shutil.copy(file,target_file)
+            print('Copied file from {} to {}'.format(file,target_file))
+
 
 # random example images
 #images = np.random.randint(0, 255, (16, 128, 128, 3), dtype=np.uint8)
@@ -99,7 +124,6 @@ seq = iaa.Sequential(
     random_order=True
 )
 
-
 from_folder=r"U:\Data\computer_vision_coursework\face_images\from_both\train"
 to_folder=r"U:\Data\computer_vision_coursework\face_images\from_both\augmented"
 from_glob=os.path.join(from_folder,'*')
@@ -109,7 +133,7 @@ target_obs=800
 
 print_no=0
 for folder in folders_to_check:
-    print('Starting folder: {}'.format(os.path.basename(folder)))
+    print('{}: Starting folder: {}'.format(os.path.basename(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'),folder)))
     file_glob=os.path.join(folder,'*jpg')
     img_files=glob.glob(file_glob)
     current_obs=len(img_files)
@@ -118,7 +142,7 @@ for folder in folders_to_check:
 
     images = load_batch_from_files(img_files)
     batches = round(obs_to_gen / current_obs) + 1
-    print('Generating augmented images for {} batches of {} images'.format(batches,current_obs))
+    print('{}: Generating augmented images for {} batches of {} images'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'), batches,current_obs))
     for i in range(batches):
         images_aug = seq.augment_images(images)
         images=np.concatenate([images,images_aug],axis=0)
@@ -132,5 +156,14 @@ for folder in folders_to_check:
         cv2.imwrite(target_file,images[i])
         print_no=print_no+1
 
-    print('Finished for folder: {}'.format(os.path.basename(folder)))
+    print('{}: Finished for folder: {}'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'), os.path.basename(folder)))
+
+balance_classes=True
+if balance_classes:
+    from_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented"
+    to_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced"
+    target_obs=800
+    balance_classes.balance_classes(from_folder,to_folder,target_obs)
+
+
 print('done!')
