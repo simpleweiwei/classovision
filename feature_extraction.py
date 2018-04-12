@@ -8,7 +8,7 @@ import os
 import pickle as pck
 from math import ceil,floor
 import random
-#from skimage import feature
+from skimage import feature
 
 #import utils as u
 
@@ -344,8 +344,23 @@ def get_vocab_hist(image_descriptions,bag_of_words):
 if __name__ == '__main__':
     print('Feature extraction process start')
 
-    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\train\*\*.jpg'
-    training_images = glob.glob(train_template)
+    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*\*.jpg'
+    #training_images = glob.glob(train_template)
+    all_training_folders = glob.glob(r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*')
+    #all_training_folders = [os.path.basename(x) for x in all_training_folders]
+    already_done = all_training_folders[0:15]
+    folder_batch1=all_training_folders[15:26]
+    folder_batch2=all_training_folders[26:36]
+    folder_batch3=all_training_folders[36:46]
+    folder_batch4=all_training_folders[46:61]
+    folder_batches=[folder_batch1,folder_batch2,folder_batch3,folder_batch4]
+
+    this_batch = 0
+
+    training_images=[]
+    for folder in folder_batches[this_batch]:
+        training_images = training_images + glob.glob(os.path.join(folder,'*'))
+
     #random.shuffle(training_images)
     #training_images = training_images[0:10]
     val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
@@ -356,7 +371,7 @@ if __name__ == '__main__':
     #training_images = glob.glob(train_template)
     #val_images = training_images[0:10]
 
-    feature_save_directory=r'.\data\extracted_features'
+    feature_save_directory=r'.\data\extracted_features_augmented_balanced'
     #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
     if not os.path.isdir(feature_save_directory):
         os.makedirs(feature_save_directory)
@@ -367,7 +382,7 @@ if __name__ == '__main__':
     #temp hack: do 2000 files at a time
     tr_all = []
     va_all = []
-    sbs=50000
+    sbs=2000
     batches = ceil(len(training_images) / sbs)
     for fbi, fb in enumerate(range(batches)):
         first_tr = fb * sbs
@@ -389,7 +404,9 @@ if __name__ == '__main__':
             if ft!='surf':
                 save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
             else:
-                train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size)
+                #rint('temp')
+                #train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size)
+                train_bow_surf=load_bag_of_words(r'./data/extracted_features/*34744*BOW*npy')
                 results[ft]['book_of_words'] = train_bow_surf
                 save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
                 #if surf, save book of words
@@ -400,8 +417,8 @@ if __name__ == '__main__':
                     last = min((1 + b) * save_batch_size, rows)
                     bow = results[ft]['book_of_words'][first:last]
                     save_nam_batch = save_nam.replace('.npy', '_BOW_batch_{}.npy'.format(str(b)))
-                    np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
-                    print('SURF Book of words batch saved: {}'.format(save_nam_batch))
+                    #np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
+                    #print('SURF Book of words batch saved: {}'.format(save_nam_batch))
 
             #get and store training & validation features
             train_features,train_labels = get_features_for_image_list(
@@ -422,8 +439,6 @@ if __name__ == '__main__':
             results[ft]['val_features'] = val_features
             results[ft]['val_labels'] = val_labels
 
-
-
             for set in ['train','val']:
                 rows,cols = np.shape(results[ft][set+'_features'])
                 batches = ceil(rows/save_batch_size)
@@ -436,7 +451,7 @@ if __name__ == '__main__':
                     results[ft][set + '_labels_' + str(b)] = labs
                     results[ft]['set'] = set
 
-                    save_nam_batch = save_nam.replace('.npy','_{}_filebatch_{}_batch_{}.npy'.format(set,str(fbi),str(b)))
+                    save_nam_batch = save_nam.replace('.npy','_{}_folderbatch_{}_filebatch_{}_batch_{}.npy'.format(set,this_batch,str(fbi),str(b)))
                     save_keys = ['feature_type', 'set', set + '_features_'+str(b), set + '_labels_' + str(b)]
                     save_dict = {k:results[ft][k] for k in save_keys}
                     np.save(os.path.join(feature_save_directory, save_nam_batch), save_dict)
