@@ -362,24 +362,21 @@ def get_vocab_hist(image_descriptions,bag_of_words):
 if __name__ == '__main__':
     print('Feature extraction process start')
 
-    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*\*.jpg'
+    train_folder=r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced'
+    train_folders = [os.path.basename(x) for x in glob.glob(os.path.join(train_folder,'*'))]
+    this_batch=0
+
+    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\{}\*.jpg'.format(train_folders[this_batch])
     training_images = glob.glob(train_template)
-    #random.shuffle(training_images)
-    training_images = training_images
-    #training_images=[]
-    val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
+    val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\{}\*.jpg'.format(train_folders[this_batch])
     val_images = glob.glob(val_template)
-    #random.shuffle(val_images)
-    #val_images = val_images[0:10]
-    #train_template = r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\*.jpg'
-    #training_images = glob.glob(train_template)
-    #val_images = training_images[0:10]
-    this_batch=20
 
     feature_save_directory=r'.\data\extracted_features_augmented_balanced\new_surf_dict'
     #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
     if not os.path.isdir(feature_save_directory):
         os.makedirs(feature_save_directory)
+
+    print('Starting extract for batch: {}'.format(this_batch))
 
     surf_dict_size=200
     train_bow_surf=None #initialise to None for data flow reasons
@@ -409,9 +406,9 @@ if __name__ == '__main__':
             if ft!='surf':
                 save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
             else:
-                bow_sample_frac=0.01
-                train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size, use_sample_fraction=bow_sample_frac)
-                #train_bow_surf=load_bag_of_words(r'./data/extracted_features/*34744*BOW*npy')
+                bow_sample_frac=1
+                #train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size, use_sample_fraction=bow_sample_frac)
+                train_bow_surf=load_bag_of_words(r'bag_of_words.npy')
                 results[ft]['book_of_words'] = train_bow_surf
                 save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
                 #if surf, save book of words

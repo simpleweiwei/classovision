@@ -12,9 +12,6 @@ import random
 from math import ceil,floor
 import shutil
 
-from classification import get_digit_class_dict
-
-
 
 def is_module_imported(module_name):
     return True if module_name in sys.modules else False
@@ -216,5 +213,34 @@ def is_error_image(image_file):
     else:
         return False
 
+def file_is_video(file_path):
+    if file_path[-3:] == 'mov':
+        return True
+    else:
+        return False
+
+def mode(array):
+    if len(array)==0:
+        return array
+    most = max(list(map(array.count, array)))
+    return list(set(filter(lambda x: array.count(x) == most, array)))
+
+def mode_of_2digit_strings(array):
+    #remove strings with character counts different to 2
+    array = [mode([y for y in x if len(y)==2]) for x in array]
+    #remov empty lists
+    array = [x[0] for x in array if len(x) > 0]
+
+    if array == []:
+        return array
+
+    most = max(list(map(array.count, array)))
+    return list(set(filter(lambda x: array.count(x) == most, array)))
 
 
+def get_digit_class_dict():
+    class_dict = {}
+    class_dict['negatives'] = 10
+    for i in range(10):
+        class_dict[str(i)] = i
+    return class_dict

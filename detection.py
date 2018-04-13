@@ -332,7 +332,8 @@ def detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_
                 #print('Aspect ratio: {}'.format(ar))
                 #u.imshow(image[y+startY:y+endY, x+startX:x+endX])
                 if (ar > aspect_ratio_bounds[0]) & (ar < aspect_ratio_bounds[1]):
-                    all_bboxes.append(((x+startX, y+startY, x+endX, y+endY),confidence))
+                    if (startX != endX) and (startY != endY):
+                        all_bboxes.append(((x+startX, y+startY, x+endX, y+endY),confidence))
 
     #find and merge overlapping bboxes
     all_bboxes0 = [x[0] for x in all_bboxes]

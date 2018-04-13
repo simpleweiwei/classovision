@@ -9,7 +9,28 @@ from sklearn import metrics,ensemble
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 
+from classification import identify_digits_from_file
 from train_classifiers import load_extracted_feature_data
+import utils as u
+
+def test_digit_classification(glob_template):
+    img_files = glob.glob(glob_template)
+
+    model_path=r'saved_networks\cnn_alldignan.h5'
+    #digit_cnn = load_model(r'saved_networks\cnn_alldignan.h5')
+
+    class_labels=[]
+    class_pred=[]
+    for i,file in enumerate(img_files):
+        digits = identify_digits_from_file(file)
+        class_labels.append(u.get_class_label_from_folder(file)[1:3])
+        class_pred.append(digits)
+        print('File {} of {}: {}, Correct label: {}, Prediction: {}'.format(i + 1, len(img_files), file, u.get_class_label_from_folder(file)[1:3], digits))
+
+    class_pred=[x[0] if len(x) > 0 else '' for x in class_pred]
+    acc = sum([class_labels[i] == class_pred[i] for i in range(len(class_labels))]) / len(class_labels)
+    print('Digit accuracy: {}'.format(acc))
+    return acc
 
 if __name__ == '__main__':
 

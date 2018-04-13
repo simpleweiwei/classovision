@@ -9,7 +9,7 @@ from keras.models import load_model
 import config as cfg
 import feature_extraction as fe
 import utils as u
-from detection import detect_digits
+from detection import detect_digits, detect_faces
 from utils import get_digit_class_dict
 
 
@@ -178,3 +178,51 @@ def classify_face_model(face_img, model_path, feature_function, **kwargs):
     mdl2_pred = mdl2.predict(features)
     return mdl2_pred
 
+def identify_faces(image, feature_type, classifier_name):
+
+    model_file = cfg.ssd_model
+    prototxt_file = cfg.prototxt_file
+
+    if np.shape(image)[0] > np.shape(image)[1]:
+        #individual photo config
+        merge_overlap = 0.6
+        aspect_ratio_bounds = (0.8, 1.4)
+        min_confidence = 0.6
+        step_size = 500
+        window_size = (1000, 1000)
+    else:
+        # group photo config
+        merge_overlap = 0.6
+        aspect_ratio_bounds = (0.8, 1.4)
+        min_confidence = 0.6
+        step_size = 250
+        window_size = (500, 500)
+
+    # single person image size = (4032, 3024, 3)
+
+
+    face_bboxes = detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds, merge_overlap,
+                               step_size, window_size)
+
+    for face_bbox in face_bboxes:
+        x1, y1, x2, y2 = face_bbox
+        face_img = image[y1:y2, x1:x2]
+
+        #skip empty bboxes
+        if any([x==0 for x in np.shape(face_img)]):
+            continue
+        x = int(round(np.mean([x1,x2])))
+        y = int(round(np.mean([y1, y2])))
+        face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)[0]
+        u.imshow(face_img)
+        #remove unknowns and convert to 2-character ID
+        face_id = int(face_id[1:3]) if 'unknown' not in face_id else cfg.unknown_face_return_value
+        this_result=np.array([[face_id,x,y]],dtype=np.int64)
+
+        #concat to results matrix if it exists, otherwise create it
+        if 'result_mat' not in locals():
+            result_mat = this_result
+        else:
+            result_mat = np.concatenate([result_mat,this_result],axis=0)
+
+    return result_mat

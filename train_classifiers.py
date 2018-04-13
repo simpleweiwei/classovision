@@ -85,10 +85,10 @@ if __name__ == '__main__':
         val_labels = results[feature_type]['val']['labels']
 
         function_dict = {
-            #'rf':train_rf,
+            'rf':train_rf,
             #'mlp':train_mlp,
             #'nb': train_nb,
-            'svm': train_svm
+            #'svm': train_svm
         }
 
         for model in function_dict:

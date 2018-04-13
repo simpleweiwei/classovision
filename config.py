@@ -4,6 +4,8 @@ HAAR_NEGATIVE_FULLIMAGE_FOLDER=r"C:\Data\computer_vision_coursework\Images\haar_
 HAAR_NEGATIVE_SUBIMAGE_FOLDER=r"C:\Data\computer_vision_coursework\Images\haar_images\negative\sub_images"
 
 every_n_frames=20
+unknown_face_return_value=9999
+
 digit_cnn_path=r'.\saved_networks\cnn_alldignan.h5'
 
 # models paths
@@ -22,4 +24,8 @@ nb_surf=r'saved_models/augmented_balanced/surf_nb_trained_47297obs.pck'
 nb_lbp=r'saved_models/augmented_balanced/lbp_nb_trained_48800obs.pck'
 
 # saved book of words for surf vocab hist gen
-bow_file=r'data\extracted_features\features_surf_dictsize200_34745_images_BOW_batch_0.npy'
+bow_file=r'data\extracted_features\features_surf_dictsize200_34744_images_BOW_batch_0.npy'
+
+# SSD face detector model files
+ssd_model=r'saved_networks\res10_300x300_ssd_iter_140000.caffemodel'
+prototxt_file=r'saved_networks\deploy.prototxt.txt'
