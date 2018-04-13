@@ -304,8 +304,18 @@ def get_image_descriptions_surf(image_files,hessian_threshold=100, use_usurf=Fal
 
     return (image_descriptions,image_labels)
 
-def get_bow_from_image_list(image_list,dict_size):
-    image_desc = get_image_descriptions_surf(image_list)[0]
+def get_bow_from_image_list(image_list,dict_size,use_sample_fraction=0.5):
+    #sledgehammer: force to undersample all classes
+    random.shuffle(image_list)
+    image_list_to_use=[]
+    folders = set([os.path.dirname(x) for x in image_list])
+    for folder in folders:
+        folder_files=[x for x in image_list if folder in x]
+        new_count = int(round(len(folder_files)*use_sample_fraction))
+        new_folder_files=folder_files[0:new_count]
+        image_list_to_use=image_list_to_use+new_folder_files
+
+    image_desc = get_image_descriptions_surf(image_list_to_use)[0]
     return get_bow(image_desc, dict_size=dict_size)
 
 def get_bow(image_descriptions,dict_size=1000):
@@ -314,7 +324,12 @@ def get_bow(image_descriptions,dict_size=1000):
     BOW = cv2.BOWKMeansTrainer(dict_size)
 
     for dsc in image_descriptions:
-        BOW.add(dsc)
+        if type(dsc) != np.ndarray:
+            continue
+        try:
+            BOW.add(dsc)
+        except Exception as ex:
+            print('Error adding to BOW: {}'.format(ex))
 
     #dictionary created
     print('Bag of Words gen: clustering with k={}'.format(dict_size))
@@ -350,7 +365,7 @@ if __name__ == '__main__':
     train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*\*.jpg'
     training_images = glob.glob(train_template)
     #random.shuffle(training_images)
-    training_images = training_images[0:1]
+    training_images = training_images
     #training_images=[]
     val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
     val_images = glob.glob(val_template)
@@ -361,7 +376,7 @@ if __name__ == '__main__':
     #val_images = training_images[0:10]
     this_batch=20
 
-    feature_save_directory=r'.\data\extracted_features_augmented_balanced'
+    feature_save_directory=r'.\data\extracted_features_augmented_balanced\new_surf_dict'
     #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
     if not os.path.isdir(feature_save_directory):
         os.makedirs(feature_save_directory)
@@ -394,9 +409,9 @@ if __name__ == '__main__':
             if ft!='surf':
                 save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
             else:
-                #rint('temp')
-                #train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size)
-                train_bow_surf=load_bag_of_words(r'./data/extracted_features/*34744*BOW*npy')
+                bow_sample_frac=0.01
+                train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size, use_sample_fraction=bow_sample_frac)
+                #train_bow_surf=load_bag_of_words(r'./data/extracted_features/*34744*BOW*npy')
                 results[ft]['book_of_words'] = train_bow_surf
                 save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
                 #if surf, save book of words
@@ -406,9 +421,9 @@ if __name__ == '__main__':
                     first = b * save_batch_size
                     last = min((1 + b) * save_batch_size, rows)
                     bow = results[ft]['book_of_words'][first:last]
-                    save_nam_batch = save_nam.replace('.npy', '_BOW_batch_{}.npy'.format(str(b)))
-                    #np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
-                    #print('SURF Book of words batch saved: {}'.format(save_nam_batch))
+                    save_nam_batch = save_nam.replace('.npy', '_BOW_samplepct{}_batch_{}.npy'.format(round(bow_sample_frac*100),str(b)))
+                    np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
+                    print('SURF Book of words batch saved: {}'.format(save_nam_batch))
 
             #get and store training & validation features
             train_features,train_labels = get_features_for_image_list(
