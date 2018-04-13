@@ -70,39 +70,39 @@ def get_digit_class_dict():
     return class_dict
 
 
-def classify_face(face_img,method='cnn',feature_type=None):
+def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
 
     model_lookup = {
         'cnn' : {
-            None : r'saved_networks/vgg_face61_trained.h5',
+            None : r'saved_networks/vgg_face61_trained_unaug.h5',
             'function' : classify_face_cnn
         },
         'svm' : {
-            'hog' : r'saved_models/hog_svm_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_svm_trained_34745obs.pck',
-            'lbp' : r'saved_models/lbp_svm_trained_34745obs.pck',
-            'cnn' : r'saved_models/cnn_svm_trained_34745obs.pck',
+            'hog' : r'saved_models/unaug_hog_svm_trained_34745obs.pck',
+            'surf' : r'saved_models/unaug_surf_svm_trained_34745obs.pck',
+            'lbp' : r'saved_models/unaug_lbp_svm_trained_34745obs.pck',
+            'cnn' : r'saved_models/unaug_cnn_svm_trained_34745obs.pck',
             'function' : classify_face_model
         },
         'mlp' : {
-            'hog' : r'saved_models/hog_mlp_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_mlp_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_mlp_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_mlp_trained_34745obs.pck',
+            'hog' : r'saved_models/unaug_hog_mlp_trained_34745obs.pck',
+            'surf' : r'saved_models/unaug_surf_mlp_trained_34745obs.pck',
+            'lbp': r'saved_models/unaug_lbp_mlp_trained_34745obs.pck',
+            'cnn': r'saved_models/unaug_cnn_mlp_trained_34745obs.pck',
             'function' : classify_face_model
         },
         'rf' : {
-            'hog' : r'saved_models/hog_rf_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_rf_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_rf_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_rf_trained_34745obs.pck',
+            'hog' : r'saved_models/unaug_hog_rf_trained_34745obs.pck',
+            'surf' : r'saved_models/unaug_surf_rf_trained_34745obs.pck',
+            'lbp': r'saved_models/unaug_lbp_rf_trained_34745obs.pck',
+            'cnn': r'saved_models/unaug_cnn_rf_trained_34745obs.pck',
             'function' : classify_face_model
         },
         'nb' : {
-            'hog' : r'saved_models/hog_nb_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_nb_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_nb_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_nb_trained_34745obs.pck',
+            'hog' : r'saved_models/unaug_hog_nb_trained_34745obs.pck',
+            'surf' : r'saved_models/unaug_surf_nb_trained_34745obs.pck',
+            'lbp': r'saved_models/unaug_lbp_nb_trained_34745obs.pck',
+            'cnn': r'saved_models/unaug_cnn_nb_trained_34745obs.pck',
             'function' : classify_face_model
         }
     }
@@ -117,8 +117,6 @@ def classify_face(face_img,method='cnn',feature_type=None):
 
     if feature_type == 'surf':
         kwargs={'bow_path':r'data\extracted_features\features_surf_dictsize200_34745_images_BOW_batch_0.npy'}
-    else:
-        kwargs={}
 
     if any(np.shape(face_img)) == 0:
         return
@@ -132,7 +130,8 @@ def classify_face(face_img,method='cnn',feature_type=None):
 def do_nothing(face_img):
     return face_img
 
-def classify_face_cnn(face_img, model_path, feature_function):
+def classify_face_cnn(face_img, model_path, feature_function, class_labels=[]):
+    #class_labels=kwargs['class_labels']
     features = feature_function(face_img)
     features = np.reshape(features, (1,)+np.shape(features))
     model = get_face_cnn(model_path)
@@ -141,7 +140,9 @@ def classify_face_cnn(face_img, model_path, feature_function):
         print('CNN is less confident about this one, softmax output: \n {}'.format(pred))
         #TODO: remove this comment
     #todo: some nicer logic about returning null if none of the softmaxes are high enough
-    return classficiation_rule_map(pred)
+    pred_ind = classficiation_rule_map(pred)
+    return class_labels[pred_ind]
+
 
 def classify_face_model(face_img, model_path, feature_function, **kwargs):
     features = feature_function(face_img, **kwargs)
