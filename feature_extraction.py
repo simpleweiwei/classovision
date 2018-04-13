@@ -348,38 +348,10 @@ if __name__ == '__main__':
     print('Feature extraction process start')
 
     train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*\*.jpg'
-    #training_images = glob.glob(train_template)
-    all_training_folders = glob.glob(r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*')
-    #all_training_folders = [os.path.basename(x) for x in all_training_folders]
-
-    """
-
-
-    already_done = all_training_folders[0:15]
-    folder_batch1=all_training_folders[15:26]
-    folder_batch2=all_training_folders[26:36]
-    folder_batch3=all_training_folders[36:46]
-    folder_batch4=all_training_folders[46:61]
-    folder_batches=[folder_batch1,folder_batch2,folder_batch3,folder_batch4]
-
-    folder_batches = [folder_batch1, folder_batch2, folder_batch3, folder_batch4]
-    this_batch = 1
-
-    training_images=[]
-    for folder in folder_batches[this_batch]:
-        training_images = training_images + glob.glob(os.path.join(folder,'*'))
-    training_images=training_images[5000:6000]
-    this_batch=16
-    print('Running folder batch {}'.format(this_batch))
-    """
-    all_training_folders = [x for x in all_training_folders if os.path.basename(x) in ['060','061']]
-    training_images=[]
-    for folder in all_training_folders:
-        training_images = training_images + glob.glob(os.path.join(folder,'*'))
-    this_batch = 20
+    training_images = glob.glob(train_template)
     #random.shuffle(training_images)
-    #training_images = training_images[0:0]
-    training_images=[]
+    training_images = training_images[0:1]
+    #training_images=[]
     val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
     val_images = glob.glob(val_template)
     #random.shuffle(val_images)
@@ -387,6 +359,7 @@ if __name__ == '__main__':
     #train_template = r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\*.jpg'
     #training_images = glob.glob(train_template)
     #val_images = training_images[0:10]
+    this_batch=20
 
     feature_save_directory=r'.\data\extracted_features_augmented_balanced'
     #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
@@ -399,8 +372,8 @@ if __name__ == '__main__':
     #temp hack: do 2000 files at a time
     tr_all = []
     va_all = []
-    sbs=2000
-    batches = ceil(len(training_images) / sbs)
+    sbs=50000
+    batches = ceil(len(val_images) / sbs)
     for fbi, fb in enumerate(range(batches)):
         first_tr = fb * sbs
         last_tr = min((1 + fb) * sbs, len(training_images))
@@ -449,14 +422,14 @@ if __name__ == '__main__':
 
             val_features, val_labels = get_features_for_image_list(
                 #val_images,
-                val_images_to_use[0:3],
+                val_images_to_use,
                 feature_type=ft,
                 surf_book_of_words=train_bow_surf
             )
             results[ft]['val_features'] = val_features
             results[ft]['val_labels'] = val_labels
 
-            for set in ['train','val']:
+            for set in ['val']:
                 rows,cols = np.shape(results[ft][set+'_features'])
                 batches = ceil(rows/save_batch_size)
                 for b in range(batches):
