@@ -193,7 +193,7 @@ if __name__ == '__main__':
     validation_datagen = ImageDataGenerator(rescale=1. / 255)
 
     # Change the batchsize according to your system RAM
-    train_batchsize = 20
+    train_batchsize = 50
     val_batchsize = 10
 
     train_generator = train_datagen.flow_from_directory(
