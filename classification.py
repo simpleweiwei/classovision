@@ -1,15 +1,17 @@
 import os
+import pickle as pck
 import shutil
-import glob
+
 import cv2
 import numpy as np
-import pickle as pck
 from keras.models import load_model
-import config as cfg
 
+import config as cfg
+import feature_extraction as fe
 import utils as u
 from detection import detect_digits
-import feature_extraction as fe
+from utils import get_digit_class_dict
+
 
 def get_digit_cnn(model_path):
 
@@ -64,23 +66,32 @@ def identify_digit_from_video(file):
 
     cap.release()
     #return majority vote of frames
-    return u.mode(digit_votes)
+    majority_vote = u.mode_of_2digit_strings(digit_votes)
+
+    return majority_vote
 
 def identify_digit_from_frame(image, model_path):
-    locs, img, sub_frames = detect_digits(image)
 
+    sub_frames = detect_digits(image,sharpen=True, debug=False)
     digit_cnn = load_model(model_path)
+    negative_value = get_digit_class_dict()['negatives']
 
     digits = []
+    all_digit_strings_found=[]
+    #each sub_frame is a list of digit images
     for j, sf in enumerate(sub_frames):
-        for k, dg in enumerate(sf[2]):
+        digits=[]
+        for k, dg in enumerate(sf):
             digit = classify_individual_digit(digit_cnn, dg)
-            digits.append(digit)
+            if digit != negative_value:
+                digits.append(str(digit))
 
-    negative_value=get_digit_class_dict()['negatives']
+        #concatenate all digits in a single location
+        if len(digits)==2:
+            digit_str = ''.join([str(d) for d in digits])
+            all_digit_strings_found.append(digit_str)
 
-    digit_str = ''.join([str(d) for d in digits if d != negative_value])
-    return digit_str
+    return all_digit_strings_found
 
 def classify_and_move_digits(model,file):
     img = cv2.imread(file,cv2.IMREAD_GRAYSCALE)
@@ -90,20 +101,11 @@ def classify_and_move_digits(model,file):
         nf = os.path.join(os.path.basename(file),str(okval),os.path.basename(file))
         shutil.move(file,nf)
 
-
-def get_digit_class_dict():
-    class_dict = {}
-    class_dict['negatives'] = 10
-    for i in range(10):
-        class_dict[str(i)] = i
-    return class_dict
-
-
 def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
 
     model_lookup = {
         'cnn' : {
-            None : r'saved_networks/vgg_face61_trained_unaug.h5',
+            None : cfg.face_cnn,
             'function' : classify_face_cnn
         },
         'svm' : {
@@ -141,7 +143,7 @@ def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
     }
 
     if feature_type == 'surf':
-        kwargs={'bow_path':r'data\extracted_features\features_surf_dictsize200_34745_images_BOW_batch_0.npy'}
+        kwargs['bow_path'] = cfg.bow_file
 
     if any(np.shape(face_img)) == 0:
         return
