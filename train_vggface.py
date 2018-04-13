@@ -212,22 +212,24 @@ if __name__ == '__main__':
 
     # Train the model
     # Training a network in Keras is as simple as calling model.fit() function as we have seen in our earlier tutorials.
+    for epoch in range(30):
+        #run and save 1 epoch at a time and save separately to have tight control on overfitting
+        model = models.load_model(model_save_path)
 
+        # Train the model
+        history = model.fit_generator(
+            train_generator,
+            steps_per_epoch=train_generator.samples / train_generator.batch_size,
+            epochs=1,
+            validation_data=validation_generator,
+            validation_steps=validation_generator.samples / validation_generator.batch_size,
+            verbose=1)
 
-    # Train the model
-    history = model.fit_generator(
-        train_generator,
-        steps_per_epoch=train_generator.samples / train_generator.batch_size,
-        epochs=30,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples / validation_generator.batch_size,
-        verbose=1)
+        # Save the model
+        if not os.path.isdir(os.path.dirname(model_save_path)):
+            os.mkdir(os.path.dirname(model_save_path))
 
-    # Save the model
-    if not os.path.isdir(os.path.dirname(model_save_path)):
-        os.mkdir(os.path.dirname(model_save_path))
-
-    save_path=model_save_path.replace('.h5','_trained.h5')
-    model.save(save_path)
+        model_save_path=model_save_path.replace('.h5','_epoch{}.h5'.format(epoch))
+        model.save(model_save_path)
 
     print('Done!')
