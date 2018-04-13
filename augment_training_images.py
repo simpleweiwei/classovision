@@ -127,43 +127,50 @@ seq = iaa.Sequential(
 from_folder=r"U:\Data\computer_vision_coursework\face_images\from_both\train"
 to_folder=r"U:\Data\computer_vision_coursework\face_images\from_both\augmented"
 from_glob=os.path.join(from_folder,'*')
+already_done=[os.path.basename(x) for x in glob.glob(os.path.join(to_folder,'*'))]
 folders_to_check=glob.glob(from_glob)
-
+#folders_to_check=[x for x in folders_to_check if os.path.basename(x) not in already_done]
+folders_to_check=[x for x in folders_to_check if (os.path.basename(x).find('unknown')>=0) & (os.path.basename(x).find('unknown')<0)]
+#folders_to_check=[x for x in folders_to_check if (int(os.path.basename(x))>=64)]
 target_obs=800
 
 print_no=0
 for folder in folders_to_check:
-    print('{}: Starting folder: {}'.format(os.path.basename(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'),folder)))
+    print('{}: Starting folder: {}'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'),os.path.basename(folder)))
     file_glob=os.path.join(folder,'*jpg')
     img_files=glob.glob(file_glob)
     current_obs=len(img_files)
     if current_obs < target_obs:
         obs_to_gen = target_obs - current_obs
 
-    images = load_batch_from_files(img_files)
-    batches = round(obs_to_gen / current_obs) + 1
-    print('{}: Generating augmented images for {} batches of {} images'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'), batches,current_obs))
-    for i in range(batches):
-        images_aug = seq.augment_images(images)
-        images=np.concatenate([images,images_aug],axis=0)
-
     target_folder = os.path.join(to_folder, os.path.basename(folder))
     if not os.path.isdir(target_folder):
         os.makedirs(target_folder)
 
+    images = load_batch_from_files(img_files)
     for i in range(np.shape(images)[0]):
-        target_file = os.path.join(target_folder, 'aug_{}.jpg'.format(print_no))
-        cv2.imwrite(target_file,images[i])
-        print_no=print_no+1
+        target_file = os.path.join(target_folder, 'orig_{}.jpg'.format(print_no))
+        cv2.imwrite(target_file, images[i])
+        print_no = print_no + 1
+
+    #batches = round(obs_to_gen / current_obs) + 1
+    #print('{}: Generating augmented images for {} batches of {} images'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'), batches,current_obs))
+    #for i in range(batches):
+    #    images_aug = seq.augment_images(images)
+    #    for i in range(np.shape(images_aug)[0]):
+    #        target_file = os.path.join(target_folder, 'aug_{}.jpg'.format(print_no))
+    #        cv2.imwrite(target_file, images_aug[i])
+    #        print_no = print_no + 1
+
 
     print('{}: Finished for folder: {}'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S'), os.path.basename(folder)))
 
-balance_classes=True
-if balance_classes:
+bc=True
+if bc:
     from_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented"
     to_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced"
     target_obs=800
-    balance_classes.balance_classes(from_folder,to_folder,target_obs)
+    balance_classes(from_folder,to_folder,target_obs)
 
 
 print('done!')
