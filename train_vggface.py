@@ -160,11 +160,10 @@ def gen_model_using_keras_vggface(n_classes):
 
 if __name__ == '__main__':
 
-    gen_new_model=True
+    gen_new_model=False
     model_save_path = r'saved_networks\vgg_face61.h5'
-    train_dir = r'C:\Data\computer_vision_coursework\Images\face_images\from_group_photos\train'
-    val_dir = r'C:\Data\computer_vision_coursework\Images\face_images\from_group_photos\val'
-
+    train_dir = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced'
+    val_dir = r'U:\Data\computer_vision_coursework\face_images\from_both\val'
 
     if gen_new_model:
         model = gen_model_using_keras_vggface(61)
@@ -212,10 +211,12 @@ if __name__ == '__main__':
 
     # Train the model
     # Training a network in Keras is as simple as calling model.fit() function as we have seen in our earlier tutorials.
-    for epoch in range(30):
-        #run and save 1 epoch at a time and save separately to have tight control on overfitting
-        model = models.load_model(model_save_path)
+    model = models.load_model(model_save_path)
 
+    epoch=0
+    model_save_path = model_save_path.replace('.h5', '_epoch{}.h5'.format(epoch))
+    for epoch in range(3):
+        #run and save 1 epoch at a time and save separately to have tight control on overfitting
         # Train the model
         history = model.fit_generator(
             train_generator,
@@ -229,7 +230,8 @@ if __name__ == '__main__':
         if not os.path.isdir(os.path.dirname(model_save_path)):
             os.mkdir(os.path.dirname(model_save_path))
 
-        model_save_path=model_save_path.replace('.h5','_epoch{}.h5'.format(epoch))
         model.save(model_save_path)
+        print('Model saved after epoch {}: {}'.format(epoch,model_save_path))
+        model_save_path = model_save_path.replace('_epoch{}.h5'.format(epoch), '_epoch{}.h5'.format(epoch + 1))
 
     print('Done!')
