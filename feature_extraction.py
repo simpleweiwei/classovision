@@ -332,6 +332,9 @@ def get_vocab_hist(image_descriptions,bag_of_words):
     #for i in range(n_images):
     for i,im_desc in enumerate(image_descriptions):
         print('Generating histogram for image {} of {}'.format(i+1,n_images))
+        if type(im_desc) != np.ndarray:
+            continue
+
         l = len(im_desc)
         for j in range(l):
             # for each description, find the BOW centroid it is closest to
@@ -348,6 +351,10 @@ if __name__ == '__main__':
     #training_images = glob.glob(train_template)
     all_training_folders = glob.glob(r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\*')
     #all_training_folders = [os.path.basename(x) for x in all_training_folders]
+
+    """
+
+
     already_done = all_training_folders[0:15]
     folder_batch1=all_training_folders[15:26]
     folder_batch2=all_training_folders[26:36]
@@ -355,14 +362,24 @@ if __name__ == '__main__':
     folder_batch4=all_training_folders[46:61]
     folder_batches=[folder_batch1,folder_batch2,folder_batch3,folder_batch4]
 
-    this_batch = 0
+    folder_batches = [folder_batch1, folder_batch2, folder_batch3, folder_batch4]
+    this_batch = 1
 
     training_images=[]
     for folder in folder_batches[this_batch]:
         training_images = training_images + glob.glob(os.path.join(folder,'*'))
-
+    training_images=training_images[5000:6000]
+    this_batch=16
+    print('Running folder batch {}'.format(this_batch))
+    """
+    all_training_folders = [x for x in all_training_folders if os.path.basename(x) in ['060','061']]
+    training_images=[]
+    for folder in all_training_folders:
+        training_images = training_images + glob.glob(os.path.join(folder,'*'))
+    this_batch = 20
     #random.shuffle(training_images)
-    #training_images = training_images[0:10]
+    #training_images = training_images[0:0]
+    training_images=[]
     val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\*\*.jpg'
     val_images = glob.glob(val_template)
     #random.shuffle(val_images)
@@ -432,7 +449,7 @@ if __name__ == '__main__':
 
             val_features, val_labels = get_features_for_image_list(
                 #val_images,
-                val_images_to_use,
+                val_images_to_use[0:3],
                 feature_type=ft,
                 surf_book_of_words=train_bow_surf
             )
