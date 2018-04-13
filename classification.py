@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import pickle as pck
 from keras.models import load_model
+import config as cfg
 
 import utils as u
 from detection import detect_digits
@@ -36,7 +37,36 @@ def classify_individual_digit(model, digit_img):
     result = classficiation_rule_map(digit_predictions)
     return result
 
-def identify_digit_string(image, model_path):
+def identify_digits_from_file(file):
+    if u.file_is_video(file):
+        return identify_digit_from_video(file)
+    else:
+        image = cv2.imread(file)
+        return identify_digit_from_frame(image, cfg.digit_cnn_path)
+
+def identify_digit_from_video(file):
+    cap = cv2.VideoCapture(file, cv2.CAP_FFMPEG)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    success, image = cap.read()
+
+    #use only every 10th frame (peformance reasons)
+    nth_frame=cfg.every_n_frames
+    frames_to_use=list(range(length))[::nth_frame]
+
+    digit_votes=[]
+    for i in frames_to_use:
+        cap.set(1, i - 1)
+        success, image = cap.read(1)  # image is an array of array of [R,G,B] values
+        frameId = cap.get(1)  # The 0th frame is often a throw-away
+        digits=identify_digit_from_frame(image,cfg.digit_cnn_path)
+        digit_votes.append(digits)
+
+    cap.release()
+    #return majority vote of frames
+    return u.mode(digit_votes)
+
+def identify_digit_from_frame(image, model_path):
     locs, img, sub_frames = detect_digits(image)
 
     digit_cnn = load_model(model_path)
@@ -50,7 +80,6 @@ def identify_digit_string(image, model_path):
     negative_value=get_digit_class_dict()['negatives']
 
     digit_str = ''.join([str(d) for d in digits if d != negative_value])
-    print("Identified digit string: '{}'".format(digit_str))
     return digit_str
 
 def classify_and_move_digits(model,file):
@@ -78,31 +107,27 @@ def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
             'function' : classify_face_cnn
         },
         'svm' : {
-            'hog' : r'saved_models/unaug_hog_svm_trained_34745obs.pck',
-            'surf' : r'saved_models/unaug_surf_svm_trained_34745obs.pck',
-            'lbp' : r'saved_models/unaug_lbp_svm_trained_34745obs.pck',
-            'cnn' : r'saved_models/unaug_cnn_svm_trained_34745obs.pck',
+            'hog' : cfg.svm_hog,
+            'surf' : cfg.svm_surf,
+            'lbp' : cfg.svm_lbp,
             'function' : classify_face_model
         },
         'mlp' : {
-            'hog' : r'saved_models/unaug_hog_mlp_trained_34745obs.pck',
-            'surf' : r'saved_models/unaug_surf_mlp_trained_34745obs.pck',
-            'lbp': r'saved_models/unaug_lbp_mlp_trained_34745obs.pck',
-            'cnn': r'saved_models/unaug_cnn_mlp_trained_34745obs.pck',
+            'hog' : cfg.mlp_hog,
+            'surf' : cfg.mlp_surf,
+            'lbp': cfg.mlp_lbp,
             'function' : classify_face_model
         },
         'rf' : {
-            'hog' : r'saved_models/unaug_hog_rf_trained_34745obs.pck',
-            'surf' : r'saved_models/unaug_surf_rf_trained_34745obs.pck',
-            'lbp': r'saved_models/unaug_lbp_rf_trained_34745obs.pck',
-            'cnn': r'saved_models/unaug_cnn_rf_trained_34745obs.pck',
+            'hog' : cfg.rf_hog,
+            'surf' : cfg.rf_surf,
+            'lbp': cfg.rf_lbp,
             'function' : classify_face_model
         },
         'nb' : {
-            'hog' : r'saved_models/unaug_hog_nb_trained_34745obs.pck',
-            'surf' : r'saved_models/unaug_surf_nb_trained_34745obs.pck',
-            'lbp': r'saved_models/unaug_lbp_nb_trained_34745obs.pck',
-            'cnn': r'saved_models/unaug_cnn_nb_trained_34745obs.pck',
+            'hog' : cfg.nb_hog,
+            'surf' : cfg.nb_surf,
+            'lbp': cfg.nb_lbp,
             'function' : classify_face_model
         }
     }
