@@ -435,16 +435,16 @@ if __name__ == '__main__':
             results[ft]['train_features']=train_features
             results[ft]['train_labels'] = train_labels
 
-            val_features, val_labels = get_features_for_image_list(
-                #val_images,
-                val_images_to_use,
-                feature_type=ft,
-                surf_book_of_words=train_bow_surf
-            )
-            results[ft]['val_features'] = val_features
-            results[ft]['val_labels'] = val_labels
+            # val_features, val_labels = get_features_for_image_list(
+            #     #val_images,
+            #     val_images_to_use,
+            #     feature_type=ft,
+            #     surf_book_of_words=train_bow_surf
+            # )
+            # results[ft]['val_features'] = val_features
+            # results[ft]['val_labels'] = val_labels
 
-            for set in ['val']:
+            for set in ['train']:
                 rows,cols = np.shape(results[ft][set+'_features'])
                 batches = ceil(rows/save_batch_size)
                 for b in range(batches):
