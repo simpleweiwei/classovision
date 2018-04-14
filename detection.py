@@ -3,6 +3,7 @@ import imutils
 import numpy as np
 import glob
 import utils as u
+import matplotlib.pyplot as plt
 
 def intersect_area(a, b):  # returns None if rectangles don't intersect
     dx = min(a[2], b[2]) - max(a[0], b[0])
@@ -138,6 +139,8 @@ def detect_digits(image, debug=False, sharpen=False):
         kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
         img = cv2.filter2D(img, -1, kernel)
 
+    img2=img.copy()
+
     #use global threshold
     th1 = cv2.threshold(img, 165, 255, cv2.THRESH_BINARY_INV)[1]
 
@@ -196,8 +199,8 @@ def detect_digits(image, debug=False, sharpen=False):
 
         if debug:
             print('Contour {0} has width {1}, height {2}, ar {3}, max colour {4}, min colour {5}'.format(i,w,h,ar,max_colour,min_colour))
-            img = cv2.rectangle(img, (x, y), (x + w, y + h), (0,0,255), 2)
-            u.imshow(img)
+            #img2 = cv2.rectangle(img2, (x, y), (x + w, y + h), (0,0,255), 2)
+
             #imshow(cnt_img)
 
         # since credit cards used a fixed size fonts with 4 groups
@@ -211,7 +214,8 @@ def detect_digits(image, debug=False, sharpen=False):
                 # append the bounding box region of the digits group
                 # to our locations list
                 locs.append((x, y, w, h))
-
+    if debug:
+        u.imshow(img2)
     # sort the digit locations from left-to-right, then initialize the
     # list of classified digits
     locs = sorted(locs, key=lambda x: x[0])
@@ -225,11 +229,14 @@ def detect_digits(image, debug=False, sharpen=False):
         # background of the credit card
         padd = 5 if (gY > 5) & (gX > 5) else min(gY,gX)
         group = img[gY - padd:gY + gH + padd, gX - padd:gX + gW + padd]
-
         if 1==0:
             # try sharpen
             kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
             im = cv2.filter2D(group, -1, kernel)
+
+        #temp: try imshow group
+        if debug:
+            u.imshow(group)
 
         group = cv2.threshold(group, 0, 255,
                               cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -243,8 +250,35 @@ def detect_digits(image, debug=False, sharpen=False):
         digitCnts = cv2.findContours(group2, cv2.RETR_EXTERNAL,
                                      cv2.CHAIN_APPROX_SIMPLE)
         digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
-        #digitCnts = contours.sort_contours(digitCnts,
-        #                                   method="left-to-right")[0]
+
+        # if only one digit found, try erode to separate them
+        #if len(digitCnts)==1:
+        group3 = group2.copy()
+
+        #Enforce 2-digit split if only 1 digit has been detected
+        if len(digitCnts)<2:
+            group3 = try_rotating(group3)
+            margin=4
+            rows,cols=np.shape(group3)
+            group3[:, 31:31 + 4] = 0
+
+            digitCnts = cv2.findContours(group3, cv2.RETR_EXTERNAL,
+                                         cv2.CHAIN_APPROX_SIMPLE)
+            digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
+
+        #resharpen and do contours
+        """
+        #kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        #group3 = cv2.filter2D(group3, -1, kernel)
+
+        kernel = np.ones((5, 5), np.uint8)
+        group3 = cv2.morphologyEx(group3, cv2.MORPH_OPEN, kernel)
+        #group3=cv2.erode(group3,kernel,iterations = 1)
+
+        digitCnts = cv2.findContours(group3, cv2.RETR_EXTERNAL,
+                                     cv2.CHAIN_APPROX_SIMPLE)
+        digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
+        """
 
         # loop over the digit contours
         digits=[]
@@ -264,14 +298,14 @@ def detect_digits(image, debug=False, sharpen=False):
 
             padd2 = 1 if (y < 1) & (x < 1) else min(y, x)
             roi = blankmat[y - padd2:y + h + padd2, x - padd2:x + w + padd2]
-            # check that 'digit' width is not more than 70% of double number width
-            if np.shape(roi)[1] < np.shape(group2)[1]*0.7:
+            # check that 'digit' width is not more than 80% of double number width
+            if np.shape(roi)[1] < np.shape(group2)[1]*0.8:
                 if min(np.shape(roi)) > 0:
                     roi = cv2.resize(roi, (28, 28))
                     digits.append(roi)
                     digit_locs.append((x,y,w,h))
 
-            img = cv2.rectangle(img, (gX + x - padd, gY + y - padd), (gX + x + w - padd, gY + y + h - padd), (0,0,255), 1)
+            #img = cv2.rectangle(img, (gX + x - padd, gY + y - padd), (gX + x + w - padd, gY + y + h - padd), (0,0,255), 1)
 
         #enforce ordering of digit lists by x coordinate to get order correct
         digit_sort_order = np.argsort([x[0] for x in digit_locs])
@@ -281,6 +315,31 @@ def detect_digits(image, debug=False, sharpen=False):
         sub_frame = (digits)
         if len(digits)>=2:
             sub_frames.append(sub_frame)
+
+    if debug:
+
+        if len(sub_frames) > 1:
+            fig, axs = plt.subplots(len(sub_frames), max([len(s) for s in sub_frames]))
+            for y in range(np.shape(axs)[0]):
+                for x in range(np.shape(axs)[1]):
+                    axs[y,x].get_xaxis().set_visible(False)
+                    axs[y,x].get_yaxis().set_visible(False)
+            for s, sub_frame in enumerate(sub_frames):
+                for d,digit in enumerate(sub_frame):
+                    axs[s,d].imshow(digit,cmap=plt.get_cmap('gray'))
+        else:
+            fig, axs = plt.subplots(1, len(sub_frames[0]))
+            if len(sub_frames[0]) > 1:
+                for d,digit in enumerate(sub_frames[0]):
+                    axs[d].imshow(digit,cmap=plt.get_cmap('gray'))
+                    axs[d].get_xaxis().set_visible(False)
+                    axs[d].get_yaxis().set_visible(False)
+            else:
+                axs.imshow(sub_frames[0][0],cmap=plt.get_cmap('gray'))
+                axs.get_xaxis().set_visible(False)
+                axs.get_yaxis().set_visible(False)
+        plt.show()
+
 
     return sub_frames
 
