@@ -130,6 +130,7 @@ def detect_digits(image, debug=False, sharpen=False):
     :param image:
     :return:
     """
+
     image = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2GRAY)
     img = imutils.resize(image, width=300)
 
@@ -277,10 +278,11 @@ def detect_digits(image, debug=False, sharpen=False):
         digits = [digits[j] for j in digit_sort_order]
         digit_locs = [digit_locs[j] for j in digit_sort_order]
 
-        sub_frame = (i,group2,digits)
-        sub_frames.append(sub_frame)
+        sub_frame = (digits)
+        if len(digits)>=2:
+            sub_frames.append(sub_frame)
 
-    return (locs,img,sub_frames)
+    return sub_frames
 
 def detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds=(0.8,1.4), merge_overlap=0.2, stepSize=700, window_size=(1000,1000)):
     #https://www.pyimagesearch.com/2018/02/26/face-detection-with-opencv-and-deep-learning/
@@ -330,7 +332,8 @@ def detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_
                 #print('Aspect ratio: {}'.format(ar))
                 #u.imshow(image[y+startY:y+endY, x+startX:x+endX])
                 if (ar > aspect_ratio_bounds[0]) & (ar < aspect_ratio_bounds[1]):
-                    all_bboxes.append(((x+startX, y+startY, x+endX, y+endY),confidence))
+                    if (startX != endX) and (startY != endY):
+                        all_bboxes.append(((x+startX, y+startY, x+endX, y+endY),confidence))
 
     #find and merge overlapping bboxes
     all_bboxes0 = [x[0] for x in all_bboxes]

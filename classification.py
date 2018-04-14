@@ -1,14 +1,17 @@
 import os
+import pickle as pck
 import shutil
-import glob
+
 import cv2
 import numpy as np
-import pickle as pck
 from keras.models import load_model
 
-import utils as u
-from detection import detect_digits
+import config as cfg
 import feature_extraction as fe
+import utils as u
+from detection import detect_digits, detect_faces
+from utils import get_digit_class_dict
+
 
 def get_digit_cnn(model_path):
 
@@ -36,22 +39,59 @@ def classify_individual_digit(model, digit_img):
     result = classficiation_rule_map(digit_predictions)
     return result
 
-def identify_digit_string(image, model_path):
-    locs, img, sub_frames = detect_digits(image)
+def identify_digits_from_file(file):
+    if u.file_is_video(file):
+        return identify_digit_from_video(file)
+    else:
+        image = cv2.imread(file)
+        return identify_digit_from_frame(image, cfg.digit_cnn_path)
 
+def identify_digit_from_video(file):
+    cap = cv2.VideoCapture(file, cv2.CAP_FFMPEG)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    success, image = cap.read()
+
+    #use only every 10th frame (peformance reasons)
+    nth_frame=cfg.every_n_frames
+    frames_to_use=list(range(length))[::nth_frame]
+
+    digit_votes=[]
+    for i in frames_to_use:
+        cap.set(1, i - 1)
+        success, image = cap.read(1)  # image is an array of array of [R,G,B] values
+        frameId = cap.get(1)  # The 0th frame is often a throw-away
+        digits=identify_digit_from_frame(image,cfg.digit_cnn_path)
+        digit_votes.append(digits)
+
+    cap.release()
+    #return majority vote of frames
+    majority_vote = u.mode_of_2digit_strings(digit_votes)
+
+    return majority_vote
+
+def identify_digit_from_frame(image, model_path):
+
+    sub_frames = detect_digits(image,sharpen=True, debug=False)
     digit_cnn = load_model(model_path)
+    negative_value = get_digit_class_dict()['negatives']
 
     digits = []
+    all_digit_strings_found=[]
+    #each sub_frame is a list of digit images
     for j, sf in enumerate(sub_frames):
-        for k, dg in enumerate(sf[2]):
+        digits=[]
+        for k, dg in enumerate(sf):
             digit = classify_individual_digit(digit_cnn, dg)
-            digits.append(digit)
+            if digit != negative_value:
+                digits.append(str(digit))
 
-    negative_value=get_digit_class_dict()['negatives']
+        #concatenate all digits in a single location
+        if len(digits)==2:
+            digit_str = ''.join([str(d) for d in digits])
+            all_digit_strings_found.append(digit_str)
 
-    digit_str = ''.join([str(d) for d in digits if d != negative_value])
-    print("Identified digit string: '{}'".format(digit_str))
-    return digit_str
+    return all_digit_strings_found
 
 def classify_and_move_digits(model,file):
     img = cv2.imread(file,cv2.IMREAD_GRAYSCALE)
@@ -61,48 +101,35 @@ def classify_and_move_digits(model,file):
         nf = os.path.join(os.path.basename(file),str(okval),os.path.basename(file))
         shutil.move(file,nf)
 
-
-def get_digit_class_dict():
-    class_dict = {}
-    class_dict['negatives'] = 10
-    for i in range(10):
-        class_dict[str(i)] = i
-    return class_dict
-
-
-def classify_face(face_img,method='cnn',feature_type=None):
+def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
 
     model_lookup = {
         'cnn' : {
-            None : r'saved_networks/vgg_face61_trained.h5',
+            None : cfg.face_cnn,
             'function' : classify_face_cnn
         },
         'svm' : {
-            'hog' : r'saved_models/hog_svm_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_svm_trained_34745obs.pck',
-            'lbp' : r'saved_models/lbp_svm_trained_34745obs.pck',
-            'cnn' : r'saved_models/cnn_svm_trained_34745obs.pck',
+            'hog' : cfg.svm_hog,
+            'surf' : cfg.svm_surf,
+            'lbp' : cfg.svm_lbp,
             'function' : classify_face_model
         },
         'mlp' : {
-            'hog' : r'saved_models/hog_mlp_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_mlp_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_mlp_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_mlp_trained_34745obs.pck',
+            'hog' : cfg.mlp_hog,
+            'surf' : cfg.mlp_surf,
+            'lbp': cfg.mlp_lbp,
             'function' : classify_face_model
         },
         'rf' : {
-            'hog' : r'saved_models/hog_rf_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_rf_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_rf_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_rf_trained_34745obs.pck',
+            'hog' : cfg.rf_hog,
+            'surf' : cfg.rf_surf,
+            'lbp': cfg.rf_lbp,
             'function' : classify_face_model
         },
         'nb' : {
-            'hog' : r'saved_models/hog_nb_trained_34745obs.pck',
-            'surf' : r'saved_models/surf_nb_trained_34745obs.pck',
-            'lbp': r'saved_models/lbp_nb_trained_34745obs.pck',
-            'cnn': r'saved_models/cnn_nb_trained_34745obs.pck',
+            'hog' : cfg.nb_hog,
+            'surf' : cfg.nb_surf,
+            'lbp': cfg.nb_lbp,
             'function' : classify_face_model
         }
     }
@@ -116,9 +143,7 @@ def classify_face(face_img,method='cnn',feature_type=None):
     }
 
     if feature_type == 'surf':
-        kwargs={'bow_path':r'data\extracted_features\features_surf_dictsize200_34745_images_BOW_batch_0.npy'}
-    else:
-        kwargs={}
+        kwargs['bow_path'] = cfg.bow_file
 
     if any(np.shape(face_img)) == 0:
         return
@@ -132,7 +157,8 @@ def classify_face(face_img,method='cnn',feature_type=None):
 def do_nothing(face_img):
     return face_img
 
-def classify_face_cnn(face_img, model_path, feature_function):
+def classify_face_cnn(face_img, model_path, feature_function, class_labels=[]):
+    #class_labels=kwargs['class_labels']
     features = feature_function(face_img)
     features = np.reshape(features, (1,)+np.shape(features))
     model = get_face_cnn(model_path)
@@ -141,7 +167,9 @@ def classify_face_cnn(face_img, model_path, feature_function):
         print('CNN is less confident about this one, softmax output: \n {}'.format(pred))
         #TODO: remove this comment
     #todo: some nicer logic about returning null if none of the softmaxes are high enough
-    return classficiation_rule_map(pred)
+    pred_ind = classficiation_rule_map(pred)
+    return class_labels[pred_ind]
+
 
 def classify_face_model(face_img, model_path, feature_function, **kwargs):
     features = feature_function(face_img, **kwargs)
@@ -150,3 +178,51 @@ def classify_face_model(face_img, model_path, feature_function, **kwargs):
     mdl2_pred = mdl2.predict(features)
     return mdl2_pred
 
+def identify_faces(image, feature_type, classifier_name):
+
+    model_file = cfg.ssd_model
+    prototxt_file = cfg.prototxt_file
+
+    if np.shape(image)[0] > np.shape(image)[1]:
+        #individual photo config
+        merge_overlap = 0.6
+        aspect_ratio_bounds = (0.8, 1.4)
+        min_confidence = 0.6
+        step_size = 500
+        window_size = (1000, 1000)
+    else:
+        # group photo config
+        merge_overlap = 0.6
+        aspect_ratio_bounds = (0.8, 1.4)
+        min_confidence = 0.6
+        step_size = 250
+        window_size = (500, 500)
+
+    # single person image size = (4032, 3024, 3)
+
+
+    face_bboxes = detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds, merge_overlap,
+                               step_size, window_size)
+
+    for face_bbox in face_bboxes:
+        x1, y1, x2, y2 = face_bbox
+        face_img = image[y1:y2, x1:x2]
+
+        #skip empty bboxes
+        if any([x==0 for x in np.shape(face_img)]):
+            continue
+        x = int(round(np.mean([x1,x2])))
+        y = int(round(np.mean([y1, y2])))
+        face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)[0]
+        u.imshow(face_img)
+        #remove unknowns and convert to 2-character ID
+        face_id = int(face_id[1:3]) if 'unknown' not in face_id else cfg.unknown_face_return_value
+        this_result=np.array([[face_id,x,y]],dtype=np.int64)
+
+        #concat to results matrix if it exists, otherwise create it
+        if 'result_mat' not in locals():
+            result_mat = this_result
+        else:
+            result_mat = np.concatenate([result_mat,this_result],axis=0)
+
+    return result_mat
