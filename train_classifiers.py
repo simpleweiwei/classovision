@@ -31,12 +31,11 @@ def train_rf(train_features,train_labels):
     clf.fit(train_features,train_labels)
     return clf
 
-def load_extracted_feature_data(glob_path):
+def load_extracted_feature_data(glob_path,exclude_strings=[]):
 
     feature_files = glob.glob(glob_path)
     feature_files = [x for x in feature_files if 'BOW' not in x.upper()]
-    #feature_files = [x for x in feature_files if 'CNN' not in x.upper()]
-    #feature_files = [x for x in feature_files if 'SURF' in x.upper()]
+    feature_files = [x for x in feature_files if all([x.upper().find(s.upper())<0 for s in exclude_strings]) ]
 
     agg_data = {}
 
@@ -67,14 +66,14 @@ if __name__ == '__main__':
 
     print('Process start: {}'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S')))
     # new load method adapted to accept batches of data
-    saved_feature_path=r'data/extracted_features_augmented_balanced'
+    saved_feature_path=r'data/extracted_features_augmented_balanced/new_surf_dict'
     file_pattern = 'features_*_*_images_*_batch_*.npy'
     glob_path = os.path.join(saved_feature_path, file_pattern)
 
-    #model_save_location = r'./saved_models/augmented_balanced'
-    model_save_location=r'D:\augmented_balanced'
+    model_save_location = r'./saved_models/augmented_balanced'
+    #model_save_location=r'D:\augmented_balanced'
 
-    results=load_extracted_feature_data(glob_path)
+    results=load_extracted_feature_data(glob_path, exclude_strings=['train'])
 
     for feature_type in results:
 
@@ -86,9 +85,9 @@ if __name__ == '__main__':
 
         function_dict = {
             'rf':train_rf,
-            #'mlp':train_mlp,
-            #'nb': train_nb,
-            #'svm': train_svm
+            'mlp':train_mlp,
+            'nb': train_nb,
+            'svm': train_svm
         }
 
         for model in function_dict:

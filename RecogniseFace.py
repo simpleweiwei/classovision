@@ -34,11 +34,15 @@ if __name__ == '__main__':
         classification_method = sys.argv[3]
     else:
         script_dir=''
-        input_path=r"D:\orig_images\002"
-        feature_type=None
+        input_path=r"U:\Data\computer_vision_coursework\face_images\from_both\val\003\IMG_0690_45.jpg"
+        feature_type='None'
         classification_method='cnn'
 
     if script_dir!='':
         os.chdir(script_dir)
 
-    RecogniseFace(input_path, feature_type, classification_method)
+    input_folder_root=r"U:\Data\computer_vision_coursework\face_images\from_group_photos\val\*"
+    for folder in glob.glob(input_folder_root):
+        RecogniseFace(folder, feature_type, classification_method)
+
+    #RecogniseFace(input_path, feature_type, classification_method)

@@ -108,11 +108,11 @@ def classify_and_move_digits(model,file):
         nf = os.path.join(os.path.basename(file),str(okval),os.path.basename(file))
         shutil.move(file,nf)
 
-def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
+def classify_face(face_img,method='cnn',feature_type='None', **kwargs):
 
     model_lookup = {
         'cnn' : {
-            None : cfg.face_cnn,
+            'None' : cfg.face_cnn,
             'function' : classify_face_cnn
         },
         'svm' : {
@@ -146,7 +146,7 @@ def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
         'surf' : fe.get_surfbow_features,
         'lbp' : fe.get_lbp_features,
         'cnn' : fe.get_cnn_features,
-        None: do_nothing
+        'None': do_nothing
     }
 
     if feature_type == 'surf':
@@ -170,10 +170,6 @@ def classify_face_cnn(face_img, model_path, feature_function):
     features = np.reshape(features, (1,)+np.shape(features))
     model = get_face_cnn(model_path)
     pred = model.predict(features)
-    if np.max(pred) < 1:
-        print('CNN is less confident about this one, softmax output: \n {}'.format(pred))
-        #TODO: remove this comment
-    #todo: some nicer logic about returning null if none of the softmaxes are high enough
     pred_ind = classficiation_rule_map(pred)
     return class_labels[pred_ind]
 
@@ -231,10 +227,8 @@ def identify_faces(image, feature_type, classifier_name):
             result_mat = np.concatenate([result_mat,this_result],axis=0)
 
     #if no faces found, return empty array
-    if len(face_bboxes)==0:
+    if len(face_bboxes)==0 or 'result_mat' not in locals():
+        #if no faces detected or all face bboxes detected invalid (1 dim ==0)
         result_mat=np.array([])
-
-    if 'result_mat' not in locals():
-        print('results matrix does not exist')
 
     return result_mat

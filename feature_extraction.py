@@ -63,9 +63,6 @@ def get_features_for_image_list_surf(image_list,bow_codebook):
 def load_bag_of_words(glob_path):
 
     bow_files = glob.glob(glob_path)
-    if len(bow_files) == 0:
-        print('Warning, bag of words file not found. Is config path correct? "{}"'.format(glob_path))
-
     for bow_file in bow_files:
         batch_result = np.load(bow_file)[()]
 
@@ -367,7 +364,7 @@ if __name__ == '__main__':
 
     train_folder=r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced'
     train_folders = [os.path.basename(x) for x in glob.glob(os.path.join(train_folder,'*'))]
-    this_batch=0
+    this_batch=51
 
     train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\{}\*.jpg'.format(train_folders[this_batch])
     training_images = glob.glob(train_template)
@@ -435,16 +432,16 @@ if __name__ == '__main__':
             results[ft]['train_features']=train_features
             results[ft]['train_labels'] = train_labels
 
-            # val_features, val_labels = get_features_for_image_list(
-            #     #val_images,
-            #     val_images_to_use,
-            #     feature_type=ft,
-            #     surf_book_of_words=train_bow_surf
-            # )
-            # results[ft]['val_features'] = val_features
-            # results[ft]['val_labels'] = val_labels
+            val_features, val_labels = get_features_for_image_list(
+                #val_images,
+                val_images_to_use,
+                feature_type=ft,
+                surf_book_of_words=train_bow_surf
+            )
+            results[ft]['val_features'] = val_features
+            results[ft]['val_labels'] = val_labels
 
-            for set in ['train']:
+            for set in ['train','val']:
                 rows,cols = np.shape(results[ft][set+'_features'])
                 batches = ceil(rows/save_batch_size)
                 for b in range(batches):

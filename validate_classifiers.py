@@ -13,11 +13,8 @@ from classification import identify_digits_from_file
 from train_classifiers import load_extracted_feature_data
 import utils as u
 
-def test_digit_classification(glob_template):
+def validate_digit_classification(glob_template):
     img_files = glob.glob(glob_template)
-
-    model_path=r'saved_networks\cnn_alldignan.h5'
-    #digit_cnn = load_model(r'saved_networks\cnn_alldignan.h5')
 
     class_labels=[]
     class_pred=[]
@@ -39,7 +36,7 @@ if __name__ == '__main__':
     feature_data_glob=r'data/extracted_features_augmented_balanced/*npy'
     model_load_path=r'saved_models/augmented_balanced'
 
-    data=load_extracted_feature_data(feature_data_glob)
+    data=load_extracted_feature_data(feature_data_glob, exclude_strings=['train','cnn'])
 
     for feature_type in data:
 
@@ -53,8 +50,8 @@ if __name__ == '__main__':
             mdl2_pred = mdl2.predict(val_features)
             #cm = metrics.confusion_matrix(val_labels,mdl2_pred)
             acc = metrics.accuracy_score(val_labels,mdl2_pred)
-            per_class_precision=metrics.precision_score(val_labels,mdl2_pred, average=None)
-            print('Feature type: {}, Model type: {}, Accuracy: {}'.format(feature_type,model_type,acc))
+            per_class_precision=[round(x,2) for x in metrics.precision_score(val_labels,mdl2_pred, average=None)]
+            print('Feature type: {}, Model type: {}, Accuracy: {}, \n Precision: {} \n Sensitivity: {}'.format(feature_type,model_type,acc,per_class_precision))
 
     print('Finish testing classifiers')
 
