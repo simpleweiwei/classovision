@@ -28,7 +28,8 @@ def get_formatted_data(file,output_dim=(1,28,28,1), dir_to_class_ind={}):
     img = cv2.imread(file,cv2.IMREAD_GRAYSCALE)
     x = img.reshape(*output_dim)
 
-    ind = get_class_label_from_folder(file,dir_to_class_ind)
+    label = get_class_label_from_folder(file)
+    ind = dir_to_class_ind[label]
     y = np.zeros(len(dir_to_class_ind))
     y[ind] = 1
     y = y.reshape(1,len(dir_to_class_ind))
