@@ -19,18 +19,26 @@ def RecogniseFace(input_path,feature,model):
             image = cv2.imread(file)
             results[file] = identify_faces(image, feature, model)
 
-    print(results)
+    print('{ \n    ' + '\n    '.join([k + ':' + str(results[k]) + ',' for k in results])[:-1] + ' \n}')
 
-    return(results)
+    return
 
 if __name__ == '__main__':
     #change working directory so that relative paths for saved models work as expected
     # (if any 'file not found' issues, please change to absolute paths in config.py)
-    script_dir=os.path.dirname(sys.argv[0])
-    os.chdir(script_dir)
 
-    input_path = sys.argv[1]
-    feature_type = sys.argv[2]
-    classification_method = sys.argv[3]
+    if len(sys.argv) > 1:
+        script_dir=os.path.dirname(sys.argv[0])
+        input_path = sys.argv[1]
+        feature_type = sys.argv[2]
+        classification_method = sys.argv[3]
+    else:
+        script_dir=''
+        input_path=r"D:\orig_images\002"
+        feature_type=None
+        classification_method='cnn'
+
+    if script_dir!='':
+        os.chdir(script_dir)
 
     RecogniseFace(input_path, feature_type, classification_method)

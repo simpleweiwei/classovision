@@ -164,8 +164,8 @@ def classify_face(face_img,method='cnn',feature_type=None, **kwargs):
 def do_nothing(face_img):
     return face_img
 
-def classify_face_cnn(face_img, model_path, feature_function, class_labels=[]):
-    #class_labels=kwargs['class_labels']
+def classify_face_cnn(face_img, model_path, feature_function):
+    class_labels = cfg.class_labels
     features = feature_function(face_img)
     features = np.reshape(features, (1,)+np.shape(features))
     model = get_face_cnn(model_path)
@@ -195,7 +195,7 @@ def identify_faces(image, feature_type, classifier_name):
         merge_overlap = 0.6
         aspect_ratio_bounds = (0.4, 2)
         min_confidence = 0.6
-        step_size = 500
+        step_size = 1000
         window_size = (2000, 2000)
     else:
         # group photo config
@@ -218,7 +218,7 @@ def identify_faces(image, feature_type, classifier_name):
             continue
         x = int(round(np.mean([x1,x2])))
         y = int(round(np.mean([y1, y2])))
-        face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)[0]
+        face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)
         #u.imshow(face_img)
         #remove unknowns and convert to 2-character ID
         face_id = int(face_id[1:3]) if 'unknown' not in face_id else cfg.unknown_face_return_value
