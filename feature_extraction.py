@@ -63,6 +63,9 @@ def get_features_for_image_list_surf(image_list,bow_codebook):
 def load_bag_of_words(glob_path):
 
     bow_files = glob.glob(glob_path)
+    if len(bow_files) == 0:
+        print('Warning, bag of words file not found. Is config path correct? "{}"'.format(glob_path))
+
     for bow_file in bow_files:
         batch_result = np.load(bow_file)[()]
 
