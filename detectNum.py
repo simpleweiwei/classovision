@@ -17,15 +17,21 @@ def detectNum(input_path):
             strings_identified=identify_digits_from_file(file)
             results[file] = identify_digits_from_file(file)
 
-    print(results)
-
-    return(results)
+    print('{ \n    ' + '\n    '.join([k + ':' + str(results[k]) + ',' for k in results])[:-1] + ' \n}')
+    return
 
 if __name__ == '__main__':
+
+    if len(sys.argv) > 1:
+        script_dir = os.path.dirname(sys.argv[0])
+        input_path = sys.argv[1]
+    else:
+        script_dir=''
+        input_path=r"C:\Data\computer_vision_coursework\Images\original_images\1of11\1of11\001"
+
     #change working directory so that relative paths for saved models work as expected
     # (if any 'file not found' issues, please change to absolute paths in config.py)
-    script_dir=os.path.dirname(sys.argv[0])
-    os.chdir(script_dir)
+    if script_dir!='':
+            os.chdir(script_dir)
 
-    input_path=sys.argv[1]
     detectNum(input_path)

@@ -16,10 +16,10 @@ def main():
 
     # identifying digits
     glob_template = r"D:\orig_images\010\*"
-    glob_template = r"D:\orig_images\001\*mov"
-    #glob_template = r"D:\orig_images\001\IMG_0653.jpg"
-    #glob_template = r"D:\orig_images\011\IMG_0811.jpg"
+    glob_template = r"C:\Data\computer_vision_coursework\Images\original_images\*\*\*\*jpg"
     img_files = glob.glob(glob_template)
+    random.shuffle(img_files)
+    img_files=img_files[0:100]
 
     model_path=r'saved_networks\cnn_alldignan.h5'
     #digit_cnn = load_model(r'saved_networks\cnn_alldignan.h5')
@@ -32,8 +32,7 @@ def main():
         class_pred.append(digits)
         print('File {} of {}: {}, Correct label: {}, Prediction: {}'.format(i + 1, len(img_files), file, u.get_class_label_from_folder(file)[1:3], digits))
 
-    class_pred=[x[0] if len(x) > 0 else '' for x in class_pred]
-    acc = sum([class_labels[i] == class_pred[i] for i in range(len(class_labels))]) / len(class_labels)
+    acc = sum([class_labels[i] in class_pred[i] for i in range(len(class_labels))]) / len(class_labels)
     print('Digit accuracy: {}'.format(acc))
 
     print('done')

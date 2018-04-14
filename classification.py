@@ -15,10 +15,14 @@ from utils import get_digit_class_dict
 
 def get_digit_cnn(model_path):
 
-    if not u.is_module_imported('keras'):
-        from keras.models import load_model
-
-    return load_model(model_path)
+    if 'digit_cnn_model' in globals():
+        return globals()['digit_cnn_model']
+    else:
+        global digit_cnn_model
+        if not u.is_module_imported('keras'):
+            from keras.models import load_model
+        digit_cnn_model = load_model(model_path)
+        return digit_cnn_model
 
 def get_face_cnn(model_path):
 
@@ -43,6 +47,9 @@ def identify_digits_from_file(file):
     if u.file_is_video(file):
         return identify_digit_from_video(file)
     else:
+        if u.is_error_image(file):
+            return "Error loading image"
+
         image = cv2.imread(file)
         return identify_digit_from_frame(image, cfg.digit_cnn_path)
 
@@ -186,21 +193,19 @@ def identify_faces(image, feature_type, classifier_name):
     if np.shape(image)[0] > np.shape(image)[1]:
         #individual photo config
         merge_overlap = 0.6
-        aspect_ratio_bounds = (0.8, 1.4)
+        aspect_ratio_bounds = (0.4, 2)
         min_confidence = 0.6
         step_size = 500
-        window_size = (1000, 1000)
+        window_size = (2000, 2000)
     else:
         # group photo config
         merge_overlap = 0.6
-        aspect_ratio_bounds = (0.8, 1.4)
+        aspect_ratio_bounds = (0.5, 1.7)
         min_confidence = 0.6
         step_size = 250
         window_size = (500, 500)
 
     # single person image size = (4032, 3024, 3)
-
-
     face_bboxes = detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds, merge_overlap,
                                step_size, window_size)
 
@@ -214,7 +219,7 @@ def identify_faces(image, feature_type, classifier_name):
         x = int(round(np.mean([x1,x2])))
         y = int(round(np.mean([y1, y2])))
         face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)[0]
-        u.imshow(face_img)
+        #u.imshow(face_img)
         #remove unknowns and convert to 2-character ID
         face_id = int(face_id[1:3]) if 'unknown' not in face_id else cfg.unknown_face_return_value
         this_result=np.array([[face_id,x,y]],dtype=np.int64)
@@ -224,5 +229,12 @@ def identify_faces(image, feature_type, classifier_name):
             result_mat = this_result
         else:
             result_mat = np.concatenate([result_mat,this_result],axis=0)
+
+    #if no faces found, return empty array
+    if len(face_bboxes)==0:
+        result_mat=np.array([])
+
+    if 'result_mat' not in locals():
+        print('results matrix does not exist')
 
     return result_mat
