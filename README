@@ -1,3 +1,6 @@
+Note: all file paths for models are set in config.py!
+If any issues loading models, check config.py
+
 Packages needed to run classifiers:
 
 keras
@@ -16,6 +19,6 @@ shutil
 pickle
 glob
 
-other:
+other packages used:
 imgaug (image augmentation)
 sklearn (model training & validation)
