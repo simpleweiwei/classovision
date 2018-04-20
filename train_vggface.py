@@ -3,7 +3,7 @@
 - [Deep Face Recognition](http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf)
 - [VGGFace2: A dataset for recognising faces across pose and age](http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/vggface2.pdf)
 '''
-
+#https://github.com/rcmalli/keras-vggface/blob/master/keras_vggface/vggface.py
 from __future__ import print_function
 
 
