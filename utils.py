@@ -22,7 +22,6 @@ def imshow(image,label='img'):
     cv2.waitKey(0)
     cv2.destroyWindow(label)
 
-
 def get_formatted_data(file,output_dim=(1,28,28,1), dir_to_class_ind={}):
 
     img = cv2.imread(file,cv2.IMREAD_GRAYSCALE)
@@ -36,15 +35,12 @@ def get_formatted_data(file,output_dim=(1,28,28,1), dir_to_class_ind={}):
 
     return (x,y)
 
-
 def save_nd_array(arr,path):
     arr = arr.reshape(np.prod(np.shape(arr)))
     np.save(path,arr)
 
-
 def save_2d_array(arr,path):
     np.save(path, arr)
-
 
 def load_nd_array(path,dims=None):
     #override 1st dim to -1 to allow automatic setting
@@ -52,10 +48,8 @@ def load_nd_array(path,dims=None):
     arr = np.load(path)
     return arr.reshape(dims)
 
-
 def load_2d_array(path):
     return np.load(path)
-
 
 def aggregate_and_save_training_data(directory_list):
     """
@@ -86,7 +80,6 @@ def aggregate_and_save_training_data(directory_list):
     save_nd_array(x_data, save_path.format('x'))
     save_2d_array(y_data, save_path.format('y'))
     print('Written x data with dims {} and y data with dims {}'.format(np.shape(x_data),np.shape(y_data)))
-
 
 def get_save_video_frames(mov_file,rotate=False):
 
