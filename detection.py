@@ -23,33 +23,6 @@ def intersection_over_total_area(a,b):
     iou = interArea / float(boxAArea + boxBArea - interArea)
     return iou
 
-
-def bb_intersection_over_union(boxA, boxB):
-    #https://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
-    # determine the (x, y)-coordinates of the intersection rectangle
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    #xB = min(boxA[0]+boxA[2], boxB[0]+boxB[2])
-    #yB = min(boxA[1]+boxA[3], boxB[1]+boxB[3])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
-
-    # compute the area of intersection rectangle
-    interArea = (xB - xA + 1) * (yB - yA + 1)
-
-    # compute the area of both the prediction and ground-truth
-    # rectangles
-    boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
-    boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    iou = interArea / float(boxAArea + boxBArea - interArea)
-
-    # return the intersection over union value
-    return iou
-
 def get_intersections(bbox_list,overlap_threshold=0.2):
     intersections = []
     for i,bbox in enumerate(bbox_list):
@@ -63,15 +36,6 @@ def get_intersections(bbox_list,overlap_threshold=0.2):
     #sort and unique intersections to reduce computation
     intersections = list(set([tuple(sorted(list(x))) for x in intersections]))
         
-    return intersections
-
-def get_intersections_pairwise(bbox_list,overlap_threshold=0.2):
-    intersections = [(tuple(sorted([x, y])), intersection_over_total_area(xbb, ybb)) for x, xbb in
-                     enumerate(bbox_list) for y, ybb in enumerate(bbox_list) if x != y]
-    intersections = list(set(intersections))
-    # remove intersections below some threshold
-    intersections = [x for x in intersections if x[1] > 0.2]
-
     return intersections
 
 def merge_intersections(bbox_list,overlap_threshold=0.2):
@@ -416,10 +380,3 @@ def detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_
     if merge_overlap is not None:
         all_bboxes0 = merge_intersections(all_bboxes0, merge_overlap)
     return all_bboxes0
-
-
-if __name__ == '__main__':
-
-
-    print('Done!')
-
