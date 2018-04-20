@@ -4,6 +4,11 @@ import glob
 from classification import identify_digits_from_file
 
 def detectNum(input_path):
+    """
+    Function searches input image or video (or folder containing images and videos) and returns extracted numbers
+    :param input_path: File or folder to be searched: function accepts .jpg or .mov files
+    :return:
+    """
 
     results={}
     if not os.path.isdir(input_path):
