@@ -33,7 +33,6 @@ def get_class_labels_from_folders(image_files):
         class_labels.append(class_label)
     return class_labels
 
-
 def get_features_for_image_list(image_list,feature_type='hog',surf_book_of_words=None):
 
     func_lookup = {
@@ -80,8 +79,7 @@ def get_surfbow_features(image, bow_path, hessian_threshold=100, use_usurf=False
                                 use_extended=use_extended)
 
     bag_of_words = load_bag_of_words(bow_path)
-
-    vocab_hist = get_vocab_hist([dsc],bag_of_words)
+    vocab_hist = get_vocab_hist([dsc], bag_of_words)
 
     return vocab_hist
 
@@ -140,7 +138,6 @@ def get_features_for_image_list_cnn(image_list):
 
     return (feature_mat,image_labels)
 
-
 def get_lbp_features(image, eps=1e-7, num_points=24, radius=8):
     #https://www.pyimagesearch.com/2015/12/07/local-binary-patterns-with-python-opencv/
     # compute the Local Binary Pattern representation
@@ -162,7 +159,6 @@ def get_lbp_features(image, eps=1e-7, num_points=24, radius=8):
 
     # return the histogram of Local Binary Patterns
     return hist
-
 
 def get_hog_features(image,cell_size=(8,8),block_size=(2,2),nbins=9):
     #https://stackoverflow.com/questions/6090399/get-hog-image-features-from-opencv-python
@@ -237,10 +233,8 @@ def get_cnn_features(image_data,batch_size=50):
 
     return features
 
-
 def get_cnn_features_imagenet(image_data,batch_size=10):
     #note: make sure you pass in an RGB image
-    #TODO: double check if this network wants RGB or BGR
     #reshape to dimensions to pass into CNN
     shp = np.shape(image_data)
     if shp[0:2] == (224, 224):
@@ -270,8 +264,6 @@ def get_cnn_features_imagenet(image_data,batch_size=10):
 
 def get_surf_features(image, hessian_threshold=400, use_usurf=False, use_extended=True):
     #https://docs.opencv.org/3.4.0/df/dd2/tutorial_py_surf_intro.html
-    # Create SURF object. You can specify params here or later.
-    # Here I set Hessian Threshold to 400
     try:
         import cv2
         surf = cv2.xfeatures2d.SURF_create(hessian_threshold)
@@ -305,7 +297,6 @@ def get_image_descriptions_surf(image_files,hessian_threshold=100, use_usurf=Fal
     return (image_descriptions,image_labels)
 
 def get_bow_from_image_list(image_list,dict_size,use_sample_fraction=0.5):
-    #sledgehammer: force to undersample all classes
     random.shuffle(image_list)
     image_list_to_use=[]
     folders = set([os.path.dirname(x) for x in image_list])
@@ -339,14 +330,14 @@ def get_bow(image_descriptions,dict_size=1000):
 
 def get_vocab_hist(image_descriptions,bag_of_words):
     #https://kushalvyas.github.io/BOV.html
-    print('Calculating vocabulary histogram for {} image descriptions'.format(len(image_descriptions)))
+    #print('Calculating vocabulary histogram for {} image descriptions'.format(len(image_descriptions)))
     n_clusters=np.shape(bag_of_words)[0]
     n_images=len(image_descriptions)
     vocab_hist=np.array([np.zeros(n_clusters) for i in range(n_images)])
 
     #for i in range(n_images):
     for i,im_desc in enumerate(image_descriptions):
-        print('Generating histogram for image {} of {}'.format(i+1,n_images))
+        #print('Generating histogram for image {} of {}'.format(i+1,n_images))
         if type(im_desc) != np.ndarray:
             continue
 
