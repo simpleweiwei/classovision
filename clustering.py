@@ -1,3 +1,7 @@
+"""
+Script uses clustering to assist with face dataset generation: used to help group individuals' face images
+"""
+
 import numpy as np
 import sys
 import os
