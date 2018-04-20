@@ -21,7 +21,7 @@ def RecogniseFace(input_path,feature,model):
         print('Feature type "none" only compatible with model type "cnn"')
         return
 
-    models = ['mlp', 'surf', 'rf', 'nb', 'cnn']
+    models = ['mlp', 'svm', 'rf', 'nb', 'cnn']
     if model not in models:
         print('Model type "{}" not accepted. Must be one of: {}'.format(model, models))
         return
