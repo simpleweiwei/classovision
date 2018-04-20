@@ -60,7 +60,8 @@ def identify_digit_from_video(file):
     success, image = cap.read()
 
     #use only every 10th frame (peformance reasons)
-    nth_frame=cfg.every_n_frames
+    frame_frac=cfg.frame_frac
+    nth_frame=int(length*frame_frac)
     frames_to_use=list(range(length))[::nth_frame]
 
     digit_votes=[]
@@ -68,6 +69,15 @@ def identify_digit_from_video(file):
         cap.set(1, i - 1)
         success, image = cap.read(1)  # image is an array of array of [R,G,B] values
         frameId = cap.get(1)  # The 0th frame is often a throw-away
+
+        if len(np.shape(image)) != 3:
+            continue
+
+        #rotate image if landscape
+        if np.shape(image)[0] < np.shape(image)[1]:
+            image = cv2.transpose(image)
+            image = cv2.flip(image, 1)
+
         digits=identify_digit_from_frame(image,cfg.digit_cnn_path)
         digit_votes.append(digits)
 
@@ -188,18 +198,19 @@ def identify_faces(image, feature_type, classifier_name):
 
     if np.shape(image)[0] > np.shape(image)[1]:
         #individual photo config
-        merge_overlap = 0.6
+        merge_overlap = 0.1
         aspect_ratio_bounds = (0.4, 2)
         min_confidence = 0.6
         step_size = 1000
         window_size = (2000, 2000)
     else:
         # group photo config
-        merge_overlap = 0.6
+        merge_overlap = 0.2
         aspect_ratio_bounds = (0.5, 1.7)
-        min_confidence = 0.6
-        step_size = 250
-        window_size = (500, 500)
+        min_confidence = 0.5
+        ws = int(round(np.shape(image)[0]/6))
+        step_size = int(round(ws/2))
+        window_size = (ws, ws)
 
     # single person image size = (4032, 3024, 3)
     face_bboxes = detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds, merge_overlap,
@@ -229,6 +240,6 @@ def identify_faces(image, feature_type, classifier_name):
     #if no faces found, return empty array
     if len(face_bboxes)==0 or 'result_mat' not in locals():
         #if no faces detected or all face bboxes detected invalid (1 dim ==0)
-        result_mat=np.array([])
+        result_mat=np.array([[]])
 
     return result_mat

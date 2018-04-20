@@ -199,9 +199,9 @@ def detect_digits(image, debug=False, sharpen=False):
 
         if debug:
             print('Contour {0} has width {1}, height {2}, ar {3}, max colour {4}, min colour {5}'.format(i,w,h,ar,max_colour,min_colour))
-            #img2 = cv2.rectangle(img2, (x, y), (x + w, y + h), (0,0,255), 2)
+            img2 = cv2.rectangle(img2, (x, y), (x + w, y + h), (0,0,255), 2)
 
-            #imshow(cnt_img)
+            u.imshow(img2)
 
         # since credit cards used a fixed size fonts with 4 groups
         # of 4 digits, we can prune potential contours based on the
@@ -210,12 +210,13 @@ def detect_digits(image, debug=False, sharpen=False):
         #if ar > 0:
             # contours can further be pruned on minimum/maximum width
             # and height
-            if (w > 8 and w < 45) and (h > 5 and h < 30):
+            if (w > 8 and w < 45) and (h > 5 and h < 35):
                 # append the bounding box region of the digits group
                 # to our locations list
                 locs.append((x, y, w, h))
     if debug:
-        u.imshow(img2)
+        plt.figure()
+        plt.imshow(img2,cmap='gray')
     # sort the digit locations from left-to-right, then initialize the
     # list of classified digits
     locs = sorted(locs, key=lambda x: x[0])
@@ -236,7 +237,9 @@ def detect_digits(image, debug=False, sharpen=False):
 
         #temp: try imshow group
         if debug:
-            u.imshow(group)
+            plt.figure()
+            plt.imshow(group, cmap='gray')
+            #u.imshow(group)
 
         group = cv2.threshold(group, 0, 255,
                               cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -251,12 +254,22 @@ def detect_digits(image, debug=False, sharpen=False):
                                      cv2.CHAIN_APPROX_SIMPLE)
         digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
 
-        # if only one digit found, try erode to separate them
-        #if len(digitCnts)==1:
-        group3 = group2.copy()
+        #remove any countours with a bounding box width less than 5 pixels
+        digitCnts = [x for x in digitCnts if (cv2.boundingRect(x)[2] > 5) & (cv2.boundingRect(x)[3] > 5) ]
 
-        #Enforce 2-digit split if only 1 digit has been detected
+        # if only one digit found, try erode to separate them
+
+        if len(digitCnts) < 2:
+            group3 = group2.copy()
+            group3 = cv2.erode(group3, kernel, iterations=1)
+            digitCnts = cv2.findContours(group3, cv2.RETR_EXTERNAL,
+                                         cv2.CHAIN_APPROX_SIMPLE)
+            digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
+            digitCnts = [x for x in digitCnts if (cv2.boundingRect(x)[2] > 5) & (cv2.boundingRect(x)[3] > 5)]
+
+        #If still only one digit found,enforce 2-digit split
         if len(digitCnts)<2:
+            group3 = group2.copy()
             group3 = try_rotating(group3)
             margin=4
             rows,cols=np.shape(group3)
@@ -265,6 +278,7 @@ def detect_digits(image, debug=False, sharpen=False):
             digitCnts = cv2.findContours(group3, cv2.RETR_EXTERNAL,
                                          cv2.CHAIN_APPROX_SIMPLE)
             digitCnts = digitCnts[0] if imutils.is_cv2() else digitCnts[1]
+            digitCnts = [x for x in digitCnts if (cv2.boundingRect(x)[2] > 5) & (cv2.boundingRect(x)[3] > 5)]
 
         #resharpen and do contours
         """
@@ -317,13 +331,16 @@ def detect_digits(image, debug=False, sharpen=False):
             sub_frames.append(sub_frame)
 
     if debug:
-
+        from matplotlib import gridspec
         if len(sub_frames) > 1:
-            fig, axs = plt.subplots(len(sub_frames), max([len(s) for s in sub_frames]))
+            fig, axs = plt.subplots(len(sub_frames), max([len(s) for s in sub_frames]), figsize=(4,4))
+            gs1 = gridspec.GridSpec(4, 4)
+            gs1.update(wspace=0.025, hspace=0.05)
             for y in range(np.shape(axs)[0]):
                 for x in range(np.shape(axs)[1]):
                     axs[y,x].get_xaxis().set_visible(False)
                     axs[y,x].get_yaxis().set_visible(False)
+                    axs[y, x].set_aspect('equal')
             for s, sub_frame in enumerate(sub_frames):
                 for d,digit in enumerate(sub_frame):
                     axs[s,d].imshow(digit,cmap=plt.get_cmap('gray'))

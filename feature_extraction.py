@@ -362,104 +362,111 @@ def get_vocab_hist(image_descriptions,bag_of_words):
 if __name__ == '__main__':
     print('Feature extraction process start')
 
-    train_folder=r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced'
+    #first gen book of words on random subsample of everything
+    train_folder=r'C:\Data\computer_vision_coursework\Images\face_images\from_both\augmented_balanced'
+    val_folder = r'C:\Data\computer_vision_coursework\Images\face_images\from_both\val'
+    # surf_train_glob = os.path.join(train_folder,'*\*.jpg')
+    # surf_training_images=glob.glob(surf_train_glob)
+    surf_dict_size=1000
+    # bow_sample_frac=0.01
+    # train_bow_surf = get_bow_from_image_list(surf_training_images, dict_size=surf_dict_size,
+    #                                          use_sample_fraction=bow_sample_frac)
+    # bow_file_name='data/bow_{}images_{}samplefrac.npy'.format(len(surf_training_images),int(bow_sample_frac*100))
+    # np.save(bow_file_name,train_bow_surf)
+
+    bow_file_name=r'data/bow_90917images_1samplefrac.npy'
     train_folders = [os.path.basename(x) for x in glob.glob(os.path.join(train_folder,'*'))]
-    this_batch=51
 
-    train_template = r'U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced\{}\*.jpg'.format(train_folders[this_batch])
-    training_images = glob.glob(train_template)
-    val_template = r'U:\Data\computer_vision_coursework\face_images\from_both\val\{}\*.jpg'.format(train_folders[this_batch])
-    val_images = glob.glob(val_template)
+    for this_batch in range(17,62):
+        train_template = os.path.join(train_folder,'{}\*.jpg'.format(train_folders[this_batch]))
+        training_images = glob.glob(train_template)
+        val_template = os.path.join(val_folder,'{}\*.jpg'.format(train_folders[this_batch]))
+        val_images = glob.glob(val_template)
 
-    feature_save_directory=r'.\data\extracted_features_augmented_balanced\new_surf_dict'
-    #feature_save_directory=r'C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\extracted_faces\feature_data'
-    if not os.path.isdir(feature_save_directory):
-        os.makedirs(feature_save_directory)
+        feature_save_directory=r'.\data\extracted_features\aug_balanced_1ksurf_dictsubsample'
+        if not os.path.isdir(feature_save_directory):
+            os.makedirs(feature_save_directory)
 
-    print('Starting extract for batch: {}'.format(this_batch))
+        print('Starting extract for batch: {}'.format(this_batch))
 
-    surf_dict_size=200
-    train_bow_surf=None #initialise to None for data flow reasons
+        tr_all = []
+        va_all = []
+        sbs=50000
+        batches = ceil(len(training_images) / sbs)
+        for fbi, fb in enumerate(range(batches)):
+            first_tr = fb * sbs
+            last_tr = min((1 + fb) * sbs, len(training_images))
+            first_va = min(fb * sbs,len(training_images))
+            last_va = min((1 + fb) * sbs, len(val_images))
 
-    #temp hack: do 2000 files at a time
-    tr_all = []
-    va_all = []
-    sbs=50000
-    batches = ceil(len(val_images) / sbs)
-    for fbi, fb in enumerate(range(batches)):
-        first_tr = fb * sbs
-        last_tr = min((1 + fb) * sbs, len(training_images))
-        first_va = min(fb * sbs,len(training_images))
-        last_va = min((1 + fb) * sbs, len(val_images))
+            training_images_to_use = training_images[first_tr:last_tr]
+            val_images_to_use = val_images[first_va:last_va]
 
-        training_images_to_use = training_images[first_tr:last_tr]
-        val_images_to_use = val_images[first_va:last_va]
+            results = {}
+            for ft in ['surf']:
+                print("Start feature extraction for '{}'".format(ft))
+                results[ft]={}
+                results[ft]['feature_type']=ft
 
-        results = {}
-        for ft in ['surf']:
-            print("Start feature extraction for '{}'".format(ft))
-            results[ft]={}
-            results[ft]['feature_type']=ft
+                #Save results in batches to overcome max save size limitations
+                save_batch_size = 4000
+                if ft!='surf':
+                    save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
+                else:
+                    bow_sample_frac=1
+                    #train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size, use_sample_fraction=bow_sample_frac)
+                    train_bow_surf=load_bag_of_words(bow_file_name)
+                    results[ft]['book_of_words'] = train_bow_surf
+                    save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '.npy'
+                    #if surf, save book of words
+                    rows, cols = np.shape(results[ft]['book_of_words'])
+                    batches = ceil(rows / save_batch_size)
+                    for b in range(batches):
+                        first = b * save_batch_size
+                        last = min((1 + b) * save_batch_size, rows)
+                        bow = results[ft]['book_of_words'][first:last]
+                        save_nam_batch = save_nam.replace('.npy', '_BOW_samplepct{}_batch_{}.npy'.format(round(bow_sample_frac*100),str(b)))
+                        np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
+                        print('SURF Book of words batch saved: {}'.format(save_nam_batch))
 
-            #Save results in batches to overcome max save size limitations
-            save_batch_size = 1000
-            if ft!='surf':
-                save_nam = 'features_' + ft + '_' + str(len(training_images)) + '_images.npy'
-            else:
-                bow_sample_frac=1
-                #train_bow_surf = get_bow_from_image_list(training_images, dict_size=surf_dict_size, use_sample_fraction=bow_sample_frac)
-                train_bow_surf=load_bag_of_words(r'bag_of_words.npy')
-                results[ft]['book_of_words'] = train_bow_surf
-                save_nam='features_' + ft + '_dictsize' + str(surf_dict_size) + '_' + str(len(training_images)) + '_images.npy'
-                #if surf, save book of words
-                rows, cols = np.shape(results[ft]['book_of_words'])
-                batches = ceil(rows / save_batch_size)
-                for b in range(batches):
-                    first = b * save_batch_size
-                    last = min((1 + b) * save_batch_size, rows)
-                    bow = results[ft]['book_of_words'][first:last]
-                    save_nam_batch = save_nam.replace('.npy', '_BOW_samplepct{}_batch_{}.npy'.format(round(bow_sample_frac*100),str(b)))
-                    np.save(os.path.join(feature_save_directory, save_nam_batch), bow)
-                    print('SURF Book of words batch saved: {}'.format(save_nam_batch))
+                #get and store training & validation features
+                train_features,train_labels = get_features_for_image_list(
+                    #training_images,
+                    training_images_to_use,
+                    feature_type=ft,
+                    surf_book_of_words=train_bow_surf
+                )
+                results[ft]['train_features']=train_features
+                results[ft]['train_labels'] = train_labels
 
-            #get and store training & validation features
-            train_features,train_labels = get_features_for_image_list(
-                #training_images,
-                training_images_to_use,
-                feature_type=ft,
-                surf_book_of_words=train_bow_surf
-            )
-            results[ft]['train_features']=train_features
-            results[ft]['train_labels'] = train_labels
+                val_features, val_labels = get_features_for_image_list(
+                    #val_images,
+                    val_images_to_use,
+                    feature_type=ft,
+                    surf_book_of_words=train_bow_surf
+                )
+                results[ft]['val_features'] = val_features
+                results[ft]['val_labels'] = val_labels
 
-            val_features, val_labels = get_features_for_image_list(
-                #val_images,
-                val_images_to_use,
-                feature_type=ft,
-                surf_book_of_words=train_bow_surf
-            )
-            results[ft]['val_features'] = val_features
-            results[ft]['val_labels'] = val_labels
+                for set in ['train','val']:
+                    rows,cols = np.shape(results[ft][set+'_features'])
+                    batches = ceil(rows/save_batch_size)
+                    for b in range(batches):
+                        first = b*save_batch_size
+                        last = min((1+b)*save_batch_size,rows)
+                        feats = results[ft][set+'_features'][first:last]
+                        results[ft][set + '_features_'+str(b)] = feats
+                        labs = results[ft][set+'_labels'][first:last]
+                        results[ft][set + '_labels_' + str(b)] = labs
+                        results[ft]['set'] = set
 
-            for set in ['train','val']:
-                rows,cols = np.shape(results[ft][set+'_features'])
-                batches = ceil(rows/save_batch_size)
-                for b in range(batches):
-                    first = b*save_batch_size
-                    last = min((1+b)*save_batch_size,rows)
-                    feats = results[ft][set+'_features'][first:last]
-                    results[ft][set + '_features_'+str(b)] = feats
-                    labs = results[ft][set+'_labels'][first:last]
-                    results[ft][set + '_labels_' + str(b)] = labs
-                    results[ft]['set'] = set
+                        save_nam_batch = save_nam.replace('.npy','_{}_folderbatch_{}_filebatch_{}_batch_{}.npy'.format(set,this_batch,str(fbi),str(b)))
+                        save_keys = ['feature_type', 'set', set + '_features_'+str(b), set + '_labels_' + str(b)]
+                        save_dict = {k:results[ft][k] for k in save_keys}
+                        np.save(os.path.join(feature_save_directory, save_nam_batch), save_dict)
+                        print('Saved feature batch: {}'.format(save_nam_batch))
 
-                    save_nam_batch = save_nam.replace('.npy','_{}_folderbatch_{}_filebatch_{}_batch_{}.npy'.format(set,this_batch,str(fbi),str(b)))
-                    save_keys = ['feature_type', 'set', set + '_features_'+str(b), set + '_labels_' + str(b)]
-                    save_dict = {k:results[ft][k] for k in save_keys}
-                    np.save(os.path.join(feature_save_directory, save_nam_batch), save_dict)
-                    print('Saved feature batch: {}'.format(save_nam_batch))
-
-            results[ft] = None
+                results[ft] = None
 
     print('done!')
 

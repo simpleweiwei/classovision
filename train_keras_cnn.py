@@ -15,10 +15,10 @@ from math import ceil
 
 import utils
 
-model_path = r'saved_networks/cnn_alldignan.h5'
+model_path = r'saved_networks/cnn_alldignan_DONOTUSE.h5'
 
-input_x_data = r'data/x_data_201803111303.npy'
-input_y_data = r'data/y_data_201803111303.npy'
+input_x_data = r'data/x_digit_data_unbalanced.npy'
+input_y_data = r'data/y_digit_data_unbalanced.npy'
 
 batch_size = 128
 num_classes = 11

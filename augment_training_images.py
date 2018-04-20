@@ -167,8 +167,8 @@ for folder in folders_to_check:
 
 bc=True
 if bc:
-    from_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented"
-    to_folder = r"U:\Data\computer_vision_coursework\face_images\from_both\augmented_balanced"
+    from_folder = r"C:\Data\computer_vision_coursework\Images\face_images\from_both\augmented"
+    to_folder = r"C:\Data\computer_vision_coursework\Images\face_images\from_both\augmented_balanced"
     target_obs=800
     balance_classes(from_folder,to_folder,target_obs)
 

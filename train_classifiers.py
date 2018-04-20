@@ -66,14 +66,13 @@ if __name__ == '__main__':
 
     print('Process start: {}'.format(dt.datetime.strftime(dt.datetime.now(),'%H:%M:%S')))
     # new load method adapted to accept batches of data
-    saved_feature_path=r'data/extracted_features_augmented_balanced/new_surf_dict'
+    saved_feature_path=r'data/extracted_features'
     file_pattern = 'features_*_*_images_*_batch_*.npy'
     glob_path = os.path.join(saved_feature_path, file_pattern)
 
-    model_save_location = r'./saved_models/augmented_balanced'
-    #model_save_location=r'D:\augmented_balanced'
+    model_save_location = r'./saved_models'
 
-    results=load_extracted_feature_data(glob_path, exclude_strings=['train'])
+    results=load_extracted_feature_data(glob_path, exclude_strings=['cnn','bow'])
 
     for feature_type in results:
 
