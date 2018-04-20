@@ -195,7 +195,7 @@ def identify_faces(image, feature_type, classifier_name):
     model_file = cfg.ssd_model
     prototxt_file = cfg.prototxt_file
 
-    if np.shape(image)[0] > np.shape(image)[1]:
+    if np.shape(image)[0] >= np.shape(image)[1]:
         #individual photo config
         merge_overlap = 0.1
         aspect_ratio_bounds = (0.4, 2)
