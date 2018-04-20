@@ -24,7 +24,7 @@ nb_surf=r'saved_models/surf_nb_trained_48800obs.pck'
 nb_lbp=r'saved_models/lbp_nb_trained_48800obs.pck'
 
 # saved book of words for surf vocab hist gen
-bow_file=r'data\extracted_features\bag_of_words_BOW.npy'
+bow_file=r'bag_of_words_BOW.npy'
 
 # SSD face detector model files
 ssd_model=r'saved_networks\res10_300x300_ssd_iter_140000.caffemodel'
