@@ -4,7 +4,6 @@ import shutil
 
 import cv2
 import numpy as np
-from keras.models import load_model
 
 import config as cfg
 import feature_extraction as fe
@@ -94,7 +93,7 @@ def identify_digit_from_frame(image, model_path):
     :param model_path: path to cnn model used to classify
     :return: list of detected numbers
     """
-
+    from keras.models import load_model
     #get sub-frames of number ROIs
     sub_frames = detect_digits(image,sharpen=True, debug=False)
     digit_cnn = load_model(model_path)
