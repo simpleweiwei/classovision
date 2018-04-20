@@ -59,7 +59,7 @@ def identify_digit_from_video(file):
 
     success, image = cap.read()
 
-    #use only every 10th frame (peformance reasons)
+    #use only every nth frame (peformance reasons)
     frame_frac=cfg.frame_frac
     nth_frame=int(length*frame_frac)
     frames_to_use=list(range(length))[::nth_frame]
@@ -88,12 +88,18 @@ def identify_digit_from_video(file):
     return majority_vote
 
 def identify_digit_from_frame(image, model_path):
+    """
+    Function detects and classifies numbers from a single image frame. Where multiple numbers are detected, return all in a list
+    :param image: image numpy array
+    :param model_path: path to cnn model used to classify
+    :return: list of detected numbers
+    """
 
+    #get sub-frames of number ROIs
     sub_frames = detect_digits(image,sharpen=True, debug=False)
     digit_cnn = load_model(model_path)
     negative_value = get_digit_class_dict()['negatives']
 
-    digits = []
     all_digit_strings_found=[]
     #each sub_frame is a list of digit images
     for j, sf in enumerate(sub_frames):
@@ -103,26 +109,18 @@ def identify_digit_from_frame(image, model_path):
             if digit != negative_value:
                 digits.append(str(digit))
 
-        #concatenate all digits in a single location
+        #concatenate all digits within each location
         if len(digits)==2:
             digit_str = ''.join([str(d) for d in digits])
             all_digit_strings_found.append(digit_str)
 
     return all_digit_strings_found
 
-def classify_and_move_digits(model,file):
-    img = cv2.imread(file,cv2.IMREAD_GRAYSCALE)
-    pred = classify_individual_digit(model, img)
-    okval = 7
-    if pred == okval:
-        nf = os.path.join(os.path.basename(file),str(okval),os.path.basename(file))
-        shutil.move(file,nf)
-
 def classify_face(face_img,method='cnn',feature_type='None', **kwargs):
 
     model_lookup = {
         'cnn' : {
-            'None' : cfg.face_cnn,
+            'none' : cfg.face_cnn,
             'function' : classify_face_cnn
         },
         'svm' : {
@@ -156,7 +154,7 @@ def classify_face(face_img,method='cnn',feature_type='None', **kwargs):
         'surf' : fe.get_surfbow_features,
         'lbp' : fe.get_lbp_features,
         'cnn' : fe.get_cnn_features,
-        'None': do_nothing
+        'none': do_nothing
     }
 
     if feature_type == 'surf':
@@ -175,6 +173,7 @@ def do_nothing(face_img):
     return face_img
 
 def classify_face_cnn(face_img, model_path, feature_function):
+    """ Classify face using CNN """
     class_labels = cfg.class_labels
     features = feature_function(face_img)
     features = np.reshape(features, (1,)+np.shape(features))
@@ -183,15 +182,16 @@ def classify_face_cnn(face_img, model_path, feature_function):
     pred_ind = classficiation_rule_map(pred)
     return class_labels[pred_ind]
 
-
 def classify_face_model(face_img, model_path, feature_function, **kwargs):
+    """ Classify face using ML model with separate feature extraction"""
     features = feature_function(face_img, **kwargs)
     features = np.reshape(features, (1,np.prod(np.shape(features))))
     mdl2 = pck.load(open(model_path, "rb"))
     mdl2_pred = mdl2.predict(features)
-    return mdl2_pred
+    return mdl2_pred[0]
 
 def identify_faces(image, feature_type, classifier_name):
+    """ Function detects and classifies faces in an image """
 
     model_file = cfg.ssd_model
     prototxt_file = cfg.prototxt_file
@@ -212,7 +212,6 @@ def identify_faces(image, feature_type, classifier_name):
         step_size = int(round(ws/2))
         window_size = (ws, ws)
 
-    # single person image size = (4032, 3024, 3)
     face_bboxes = detect_faces(image, model_file, prototxt_file, min_confidence, aspect_ratio_bounds, merge_overlap,
                                step_size, window_size)
 
@@ -228,7 +227,7 @@ def identify_faces(image, feature_type, classifier_name):
         face_id = classify_face(face_img, method=classifier_name, feature_type=feature_type)
         #u.imshow(face_img)
         #remove unknowns and convert to 2-character ID
-        face_id = int(face_id[1:3]) if 'unknown' not in face_id else cfg.unknown_face_return_value
+        face_id = int(face_id) if 'unknown' not in face_id else cfg.unknown_face_return_value
         this_result=np.array([[face_id,x,y]],dtype=np.int64)
 
         #concat to results matrix if it exists, otherwise create it
