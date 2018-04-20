@@ -162,7 +162,6 @@ if __name__ == '__main__':
     #validate_digit_classification(r'C:\Data\computer_vision_coursework\Images\digit_images\ind_digits\val\*\*jpg')
     #validate_digit_classification(r'C:\Data\computer_vision_coursework\Images\individual_people\val\*\*jpg')
 
-
     print('Finish testing classifiers')
 
 

@@ -1,4 +1,21 @@
-Nonstandard packages required/extented:
+Packages needed to run classifiers:
+
 keras
-opencv-contrib-python (extended OpenCV including SIFT and SURF)
+tensorflow
+cv2
 imutils
+numpy
+matplotlib
+scipy
+math
+randoom
+skimage
+os
+sys
+shutil
+pickle
+glob
+
+other:
+imgaug (image augmentation)
+sklearn (model training & validation)

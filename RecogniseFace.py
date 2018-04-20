@@ -60,8 +60,8 @@ if __name__ == '__main__':
     else:
         script_dir=''
         input_path=r"C:\Data\computer_vision_coursework\Images\Group11of11\Group11of11\IMG_0613_62.jpg"
-        feature_type='lbp'
-        classification_method='nb'
+        feature_type='surf'
+        classification_method='svm'
 
     if script_dir!='':
         os.chdir(script_dir)
